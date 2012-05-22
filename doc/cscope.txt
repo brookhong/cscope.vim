@@ -1,0 +1,57 @@
+*This* plugin helps you to create cscope database and connect to existing proper database automatically.
+
+Recommended settings --
+
+    " in case your cscope execute is not in system path.
+    " let g:cscope_cmd = 'D:/tools/vim/cscope.exe'
+    " s: Find this C symbol
+    nnoremap <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
+    " g: Find this definition
+    nnoremap <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
+    " d: Find functions called by this function
+    nnoremap <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
+    " c: Find functions calling this function
+    nnoremap <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
+    " t: Find this text string
+    nnoremap <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
+    " e: Find this egrep pattern
+    nnoremap <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
+    " f: Find this file
+    nnoremap <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
+    " i: Find files #including this file
+    nnoremap <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
+    nnoremap <leader>l :call ToggleLocationList()<CR>
+
+To use the plugin, just open your source file with VIM, and press <leader>fs with cursor on a function name.
+
+The plugin will try to find and connect a proper cscope database for current file. If there is no proper cscope database for current file, you are prompted to specify a folder with a string like --
+
+    *** Can not find proper cscope db, please input a path to create cscope db for. ***
+
+Then the plugin will create cscope database for you, connect to it, and find what you want.
+
+The found result will be listed in location list window, press <leader>l to toggle it.
+
+Next time when you open the same file or other file that the cscope database can be used for, the plugin will connect to the cscope database automatically. You need not take care of anything about cscope database.
+
+There is one case you need take care cscope database. If you have some files added/edited in those folders for which cscope databases have been created, then you want to refresh the cscope database, you can use command --
+
+    :*Cs* <path_to_the_folder>
+
+For exmample,
+
+    :Cs /works/vim/src
+
+Other commands --
+
+    :*Cl*     to list all existing cscope databases
+
+Here is example output from :Cl
+
+ ID                   COUNT    PATH
+*1337668712           3        /works/vim/src
+
+'*'         means the db has been connected.
+ID          id of the db.
+COUNT       how many times this db has ever been used.
+PATH        which folder the db is for.
