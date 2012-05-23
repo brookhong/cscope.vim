@@ -1,1 +1,3 @@
-cso	cscope.txt	/*This*
+CscopeFind	cscope.txt	/*Default settings*
+CscopeGen	cscope.txt	/*CscopeGen*
+CscopeList	cscope.txt	/*CscopeList*

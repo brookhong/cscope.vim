@@ -4,27 +4,38 @@
 "
 set cscopequickfix=s-,g-,d-,c-,t-,e-,f-,i-
 " s: Find this C symbol
-nnoremap <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
+map <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
 " g: Find this definition
-nnoremap <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
+map <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
 " d: Find functions called by this function
-nnoremap <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
+map <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
 " c: Find functions calling this function
-nnoremap <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
+map <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
 " t: Find this text string
-nnoremap <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
+map <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
 " e: Find this egrep pattern
-nnoremap <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
+map <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
 " f: Find this file
-nnoremap <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
+map <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
 " i: Find files #including this file
-nnoremap <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
-nnoremap <leader>l :call ToggleLocationList()<CR>
+map <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
+map <leader>l :call ToggleLocationList()<CR>
 
-com! -nargs=? -complete=dir Cs call CreateCscopeDB("<args>")
-com! -nargs=0 Cl call ListDBs()
+com! -nargs=? -complete=dir CscopeGen call CreateCscopeDB("<args>")
+com! -nargs=0 CscopeList call <SID>ListDBs()
+com! -nargs=0 CscopeClear call <SID>ClearCscopeDB()
 
-function! ListDBs()
+function! s:ClearCscopeDB()
+  cs kill -1
+  let s:loaded_dbs = []
+  let s:dbs = {}
+  let s:dbstat = {}
+  let s:db_dirs = []
+  call <SID>RmDBfiles()
+  call writefile([], s:index_file)
+endfunction
+
+function! s:ListDBs()
   let s = [' ID                   COUNT    PATH']
   for d in s:db_dirs
     if count(s:loaded_dbs,d)
@@ -94,11 +105,11 @@ function! s:ListFiles(dir)
     let cwd = len(d) ? remove(d, 0) : ''
     sleep 1m | let &l:stl = 'Found '.len(f).' files, finding in '.cwd | redrawstatus
   endwhile
-  let &l:stl = sl
+  sleep 1m | let &l:stl = sl | redrawstatus
   return f
 endfunction
 
-function! s:ClearCscopeDB()
+function! s:RmDBfiles()
   let odbs = split(globpath(s:cscope_vim_dir, "*"), "\n")
   for f in odbs
     call delete(f)
@@ -116,7 +127,7 @@ function! s:LoadIndex()
       let e = matchlist(i,'\(.*\)|\(.*\)|\(.*\)')
       if len(e) == 0
         call delete(s:index_file)
-        call <SID>ClearCscopeDB()
+        call <SID>RmDBfiles()
       else
         let db_file = s:cscope_vim_dir.'/'.e[2].'.db'
         if filereadable(db_file)
@@ -130,7 +141,7 @@ function! s:LoadIndex()
       endif
     endfor
   else
-    call <SID>ClearCscopeDB()
+    call <SID>RmDBfiles()
   endif
   let s:db_dirs = keys(s:dbs)
 endfunction
@@ -166,7 +177,9 @@ function! s:_CreateCscopeDB(dir,id)
   let cscope_db = s:cscope_vim_dir.'/'.a:id.'.db'
   let files = <SID>ListFiles(a:dir)
   call writefile(files, cscope_files)
-  exe '!'.g:cscope_cmd.' -b -i '.cscope_files
+  echo "Creating cscope database for ".a:dir
+  silent exe '!'.g:cscope_cmd.' -b -i '.cscope_files
+  redraw | echo "Done"
   call rename('cscope.out', cscope_db)
   call delete(cscope_files)
 endfunction
