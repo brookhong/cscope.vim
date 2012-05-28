@@ -197,6 +197,24 @@ function! s:_CreateCscopeDB(dir,id)
   endif
 endfunction
 
+function! s:CheckAbsolutePath(dir, defaultPath)
+  let d = a:dir
+  while 1
+    if !isdirectory(d)
+      echohl WarningMsg | echo "Please input a valid path." | echohl None
+      let d = input("", a:defaultPath, 'dir')
+    elseif (len(d) < 2 || (d[0] != '/' && d[1] != ':'))
+      echohl WarningMsg | echo "Please input an absolute path." | echohl None
+      let d = input("", a:defaultPath, 'dir')
+    else
+      break
+    endif
+  endwhile
+  let d = substitute(d,'\\','/','g')
+  let d = substitute(d,'/\+$','','')
+  return d
+endfunction
+
 function! CreateCscopeDB(dir)
   cs kill -1
   let s:loaded_dbs = []
@@ -204,12 +222,8 @@ function! CreateCscopeDB(dir)
   if (a:dir == "")
     let dirs = s:db_dirs
   else
-    let cwd = a:dir
-    while <SID>IsRelativePath(cwd)
-      echohl WarningMsg | echo "Please input a absolute path." | echohl None
-      let cwd = input("", getcwd(), 'dir')
-    endwhile
-    let dirs = [substitute(cwd,'\\','/','g')]
+    let cwd = <SID>CheckAbsolutePath(a:dir, getcwd())
+    let dirs = [cwd]
   endif
   for d in dirs
     if count(s:db_dirs, d)
@@ -227,10 +241,6 @@ function! CreateCscopeDB(dir)
     call <SID>FlushIndex()
     call <SID>_CreateCscopeDB(d, id)
   endfor
-endfunction
-
-function! s:IsRelativePath(dir)
-  return (len(a:dir) < 2 || (a:dir[0] != '/' && a:dir[1] != ':'))
 endfunction
 
 function! s:AutoloadCscopeDB()
@@ -257,12 +267,8 @@ function! s:AutoloadCscopeDB()
   else
     echohl WarningMsg | echo "Can not find proper cscope db, please input a path to generate cscope db for." | echohl None
     let m_dir = input("", p, 'dir')
-    if m_dir != '' && isdirectory(m_dir)
-      while <SID>IsRelativePath(m_dir)
-        echohl WarningMsg | echo "Please input a absolute path." | echohl None
-        let m_dir = input("", p, 'dir')
-      endwhile
-      let m_dir = substitute(m_dir,'\\','/','g')
+    if m_dir != ''
+      let m_dir = <SID>CheckAbsolutePath(m_dir, p)
       let id = <SID>GetIndex(m_dir)
       let m_db = s:cscope_vim_dir.'/'.id.'.db'
       if ! filereadable(m_db)
