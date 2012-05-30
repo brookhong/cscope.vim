@@ -66,8 +66,12 @@ endfunction
 function! CscopeFind(action, word)
   let r = <SID>AutoloadCscopeDB()
   if r
-    exe ':lcs f '.a:action.' '.a:word
-    lw
+    try
+      exe ':lcs f '.a:action.' '.a:word
+      lw
+    catch
+      echohl WarningMsg | echo 'Can not find '.a:word.' with querytype as '.a:action.'.' | echohl None
+    endtry
   endif
 endfunction
 
