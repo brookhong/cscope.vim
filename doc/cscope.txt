@@ -1,6 +1,49 @@
 This plugin helps you to create cscope database and connect to existing proper database automatically.
 
-*Default settings* --
+To use the plugin, just open your source file with VIM, and press <leader>fs with cursor on a function name.
+
+The plugin will try to find and connect a proper cscope database for current file. If there is no proper cscope database for current file, you are prompted to specify a folder with a string like --
+
+    *** Can not find proper cscope db, please input a path to create cscope db for. ***
+
+Then the plugin will create cscope database for you, connect to it, and find what you want.
+
+The found result will be listed in location list window, press <leader>l to toggle it.
+
+Next time when you open the same file or other file that the cscope database can be used for, the plugin will connect to the cscope database automatically. You need not take care of anything about cscope database.
+
+If you want to find something under some path without openning some file, use CscopeFind.
+
+    :*CscopeFind* <something_to_find> [path_to_find]
+
+    If there is no path_to_find provided, current working directory will be used.
+
+There is one case you need take care cscope database. If you have some files added/edited in those folders for which cscope databases have been created, then you want to refresh the cscope database, you can use command --
+
+    :*CscopeGen* [path_to_the_folder]
+
+    If there is no path_to_the_folder provided, all existing cscope databases will be re-created.
+
+For exmample,
+
+    :*CscopeGen* /works/vim/src
+
+Other commands --
+
+    :*CscopeClear*    to remove all existing cscope databases
+    :*CscopeList*     to list all existing cscope databases
+
+Here is example output from :CscopeList
+
+ ID                   COUNT    PATH
+*1337668712           3        /works/vim/src
+
+'*'         means the db has been connected.
+ID          id of the db.
+COUNT       how many times this db has ever been used.
+PATH        which folder the db is for.
+
+Default settings are here, you can modify it to create your own key mappings.
 
     " in case your cscope execute is not in system path.
     " let g:cscope_cmd = 'D:/tools/vim/cscope.exe'
@@ -22,40 +65,6 @@ This plugin helps you to create cscope database and connect to existing proper d
     map <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
     map <leader>l :call ToggleLocationList()<CR>
 
-To use the plugin, just open your source file with VIM, and press <leader>fs with cursor on a function name.
+Preload path settings help you to load some common libraries by default. For example,
 
-The plugin will try to find and connect a proper cscope database for current file. If there is no proper cscope database for current file, you are prompted to specify a folder with a string like --
-
-    *** Can not find proper cscope db, please input a path to create cscope db for. ***
-
-Then the plugin will create cscope database for you, connect to it, and find what you want.
-
-The found result will be listed in location list window, press <leader>l to toggle it.
-
-Next time when you open the same file or other file that the cscope database can be used for, the plugin will connect to the cscope database automatically. You need not take care of anything about cscope database.
-
-There is one case you need take care cscope database. If you have some files added/edited in those folders for which cscope databases have been created, then you want to refresh the cscope database, you can use command --
-
-    :*CscopeGen* [path_to_the_folder]
-
-If there is no path_to_the_folder provided, all existing cscope databases will be re-created.
-
-For exmample,
-
-    :*CscopeGen* /works/vim/src
-
-Other commands --
-
-    :*CscopeClear*    to remove all existing cscope databases
-    :*CscopeList*     to list all existing cscope databases
-
-Here is example output from :CscopeList
-
- ID                   COUNT    PATH
-*1337668712           3        /works/vim/src
-
-'*'         means the db has been connected.
-ID          id of the db.
-COUNT       how many times this db has ever been used.
-PATH        which folder the db is for.
-
+    let g:cscope_preload_path="/usr/include/c++/;/works/phplib/trunk/php"

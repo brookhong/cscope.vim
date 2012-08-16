@@ -24,6 +24,7 @@ map <leader>l :call ToggleLocationList()<CR>
 com! -nargs=? -complete=dir CscopeGen call CreateCscopeDB("<args>")
 com! -nargs=0 CscopeList call <SID>ListDBs()
 com! -nargs=0 CscopeClear call <SID>ClearCscopeDB()
+com! -nargs=+ -complete=dir CscopeFind call CscopeFind('t', <q-args>)
 
 function! s:ClearCscopeDB()
   cs kill -1
@@ -33,6 +34,17 @@ function! s:ClearCscopeDB()
   let s:db_dirs = []
   call <SID>RmDBfiles()
   call writefile([], s:index_file)
+endfunction
+
+function! s:GetDirById(id)
+  let dir = ""
+  for d in s:db_dirs
+    if s:dbs[d] == a:id
+      let dir = d
+      break
+    endif
+  endfor
+  return dir
 endfunction
 
 function! s:ListDBs()
@@ -63,11 +75,19 @@ function! ToggleLocationList()
   endif
 endfunction
 
-function! CscopeFind(action, word)
-  let r = <SID>AutoloadCscopeDB()
-  if r
+function! CscopeFind(action, word_dir)
+  let args = split(a:word_dir, ' ')
+  let l:word = args[0]
+  if len(args) > 1
+    call <SID>AutoloadCscopeDB(args[1])
+  elseif bufname('%') != ''
+    call <SID>AutoloadCscopeDB(expand('%:p:h'))
+  endif
+
+  call <SID>PreloadCscopeDB()
+  if len(s:loaded_dbs) > 0
     try
-      exe ':lcs f '.a:action.' '.a:word
+      exe ':lcs f '.a:action.' '.l:word
       lw
     catch
       echohl WarningMsg | echo 'Can not find '.a:word.' with querytype as '.a:action.'.' | echohl None
@@ -226,7 +246,11 @@ function! CreateCscopeDB(dir)
   if (a:dir == "")
     let dirs = s:db_dirs
   else
-    let cwd = <SID>CheckAbsolutePath(a:dir, getcwd())
+    let cwd = a:dir
+    if cwd =~ "^\\d\\+$"
+      let cwd = <SID>GetDirById(cwd)
+    endif
+    let cwd = <SID>CheckAbsolutePath(cwd, getcwd())
     let dirs = [cwd]
   endif
   for d in dirs
@@ -247,10 +271,8 @@ function! CreateCscopeDB(dir)
   endfor
 endfunction
 
-function! s:AutoloadCscopeDB()
-  let r = 0
-  let p = expand('%:p:h')
-  let f = substitute(p,'\\','/','g')
+function! s:AutoloadCscopeDB(dir)
+  let f = substitute(a:dir,'\\','/','g')
   for d in s:loaded_dbs
     if f =~ d.'.*$'
       return 1
@@ -270,9 +292,9 @@ function! s:AutoloadCscopeDB()
     let m_db = s:cscope_vim_dir.'/'.s:dbs[m_dir].'.db'
   else
     echohl WarningMsg | echo "Can not find proper cscope db, please input a path to generate cscope db for." | echohl None
-    let m_dir = input("", p, 'dir')
+    let m_dir = input("", a:dir, 'dir')
     if m_dir != ''
-      let m_dir = <SID>CheckAbsolutePath(m_dir, p)
+      let m_dir = <SID>CheckAbsolutePath(m_dir, a:dir)
       let id = <SID>GetIndex(m_dir)
       let m_db = s:cscope_vim_dir.'/'.id.'.db'
       if ! filereadable(m_db)
@@ -285,7 +307,25 @@ function! s:AutoloadCscopeDB()
     let s:dbstat[m_dir] = s:dbstat[m_dir]+1
     call <SID>FlushIndex()
     call add(s:loaded_dbs, m_dir)
-    let r = 1
   endif
-  return r
+endfunction
+
+function! s:PreloadCscopeDB()
+  if exists('g:cscope_preload_path')
+    let dirs = split(g:cscope_preload_path, ';')
+    for m_dir in dirs
+      let m_dir = <SID>CheckAbsolutePath(m_dir, m_dir)
+      let id = <SID>GetIndex(m_dir)
+      let m_db = s:cscope_vim_dir.'/'.id.'.db'
+      if ! filereadable(m_db)
+        call <SID>_CreateCscopeDB(m_dir, id)
+      endif
+      if m_db != ''
+        exe 'cs add '.m_db
+        let s:dbstat[m_dir] = s:dbstat[m_dir]+1
+        call <SID>FlushIndex()
+        call add(s:loaded_dbs, m_dir)
+      endif
+    endfor
+  endif
 endfunction
