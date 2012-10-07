@@ -48,7 +48,8 @@ Default settings are here, you can modify it to create your own key mappings.
     " in case your cscope execute is not in system path.
     " let g:cscope_cmd = 'D:/tools/vim/cscope.exe'
     " s: Find this C symbol
-    map <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
+    nnoremap <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
+    vnoremap <leader>fs y:call CscopeFind('s', expand(@"))<CR>
     " g: Find this definition
     map <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
     " d: Find functions called by this function
