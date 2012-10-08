@@ -4,22 +4,33 @@
 "
 set cscopequickfix=s-,g-,d-,c-,t-,e-,f-,i-
 " s: Find this C symbol
-map <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
+nnoremap <C-Bslash>s :call CscopeFind('s', expand('<cword>'))<CR>
+vnoremap <C-Bslash>s y:call CscopeFind('s', expand(@"))<CR>
+" TODO or no need expand()
+" vnoremap <C-Bslash>i y:call CscopeFind('i', @")<CR>
 " g: Find this definition
-map <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
+nnoremap <C-Bslash>g :call CscopeFind('g', expand('<cword>'))<CR>
+vnoremap <C-Bslash>g y:call CscopeFind('g', expand(@"))<CR>
 " d: Find functions called by this function
-map <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
+nnoremap <C-Bslash>d :call CscopeFind('d', expand('<cword>'))<CR>
+vnoremap <C-Bslash>d y:call CscopeFind('d', expand(@"))<CR>
 " c: Find functions calling this function
-map <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
+nnoremap <C-Bslash>c :call CscopeFind('c', expand('<cword>'))<CR>
+vnoremap <C-Bslash>c y:call CscopeFind('c', expand(@"))<CR>
 " t: Find this text string
-map <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
+nnoremap <C-Bslash>t :call CscopeFind('t', expand('<cword>'))<CR>
+vnoremap <C-Bslash>t y:call CscopeFind('t', expand(@"))<CR>
 " e: Find this egrep pattern
-map <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
+nnoremap <C-Bslash>e :call CscopeFind('e', expand('<cword>'))<CR>
+vnoremap <C-Bslash>e y:call CscopeFind('e', expand(@"))<CR>
 " f: Find this file
-map <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
+nnoremap <C-Bslash>f :call CscopeFind('f', expand('<cword>'))<CR>
+vnoremap <C-Bslash>f y:call CscopeFind('f', expand(@"))<CR>
 " i: Find files #including this file
-map <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
-map <leader>l :call ToggleLocationList()<CR>
+nnoremap <C-Bslash>i :call CscopeFind('i', expand('<cword>'))<CR>
+vnoremap <C-Bslash>i y:call CscopeFind('i', expand(@"))<CR>
+
+nnoremap <leader>l :call ToggleLocationList()<CR>
 
 com! -nargs=? -complete=dir CscopeGen call CreateCscopeDB("<args>")
 com! -nargs=0 CscopeList call <SID>ListDBs()
