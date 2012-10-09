@@ -90,7 +90,7 @@ function! CscopeFind(action, word_dir)
       exe ':lcs f '.a:action.' '.l:word
       lw
     catch
-      echohl WarningMsg | echo 'Can not find '.a:word.' with querytype as '.a:action.'.' | echohl None
+      echohl WarningMsg | echo 'Can not find '.l:word.' with querytype as '.a:action.'.' | echohl None
     endtry
   endif
 endfunction
