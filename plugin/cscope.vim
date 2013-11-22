@@ -84,8 +84,8 @@ function! ToggleLocationList()
   endif
 endfunction
 
-function! CscopeFind(action, word_dir)
-  let args = split(a:word_dir, ' ')
+function! CscopeFind(action, word)
+  let args = split(a:word, ' ')
   let l:word = args[0]
   if len(args) > 1
     call <SID>AutoloadCscopeDB(args[1])
