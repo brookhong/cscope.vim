@@ -12,23 +12,37 @@ if !exists('g:cscope_cmd')
 endif
 
 set cscopequickfix=s-,g-,d-,c-,t-,e-,f-,i-
-" s: Find this C symbol
-map <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
-" g: Find this definition
-map <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
-" d: Find functions called by this function
-map <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
-" c: Find functions calling this function
-map <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
-" t: Find this text string
-map <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
-" e: Find this egrep pattern
-map <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
-" f: Find this file
-map <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
-" i: Find files #including this file
-map <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
-map <leader>l :call ToggleLocationList()<CR>
+
+if !exists('g:cscope_map_key')
+  let g:cscope_map_key = 1
+endif
+
+if !exists('g:cscope_map_toggle_location_key')
+  let g:cscope_map_toggle_location_key = 1
+endif
+
+if g:cscope_map_key
+  " s: Find this C symbol
+  map <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
+  " g: Find this definition
+  map <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
+  " d: Find functions called by this function
+  map <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
+  " c: Find functions calling this function
+  map <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
+  " t: Find this text string
+  map <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
+  " e: Find this egrep pattern
+  map <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
+  " f: Find this file
+  map <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
+  " i: Find files #including this file
+  map <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
+endif
+
+if g:cscope_map_toggle_location_key
+  map <leader>l :call ToggleLocationList()<CR>
+endif
 
 com! -nargs=? -complete=dir CscopeGen call CreateCscopeDB("<args>")
 com! -nargs=0 CscopeList call <SID>ListDBs()
