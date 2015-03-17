@@ -12,23 +12,6 @@ if !exists('g:cscope_cmd')
 endif
 
 set cscopequickfix=s-,g-,d-,c-,t-,e-,f-,i-
-" s: Find this C symbol
-map <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
-" g: Find this definition
-map <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
-" d: Find functions called by this function
-map <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
-" c: Find functions calling this function
-map <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
-" t: Find this text string
-map <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
-" e: Find this egrep pattern
-map <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
-" f: Find this file
-map <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
-" i: Find files #including this file
-map <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
-map <leader>l :call ToggleLocationList()<CR>
 
 com! -nargs=? -complete=dir CscopeGen call CreateCscopeDB("<args>")
 com! -nargs=0 CscopeList call <SID>ListDBs()
@@ -102,6 +85,18 @@ function! CscopeFind(action, word_dir)
       echohl WarningMsg | echo 'Can not find '.l:word.' with querytype as '.a:action.'.' | echohl None
     endtry
   endif
+endfunction
+
+function! CscopeFindInteractive(pat)
+    call inputsave()
+    let qt = input("\nChoose a querytype for '".a:pat."'(:help cscope-find)\n  c: functions calling this function\n  d: functions called by this function\n  e: this egrep pattern\n  f: this file\n  g: this definition\n  i: files #including this file\n  s: this C symbol\n  t: this text string\n\n  or\n  <querytype><pattern> to query `pattern` instead of '".a:pat."' as `querytype`, Ex. `smain` to query a C symbol named 'main'.\n> ")
+    call inputrestore()
+    if len(qt) > 1
+        call CscopeFind(qt[0], qt[1:])
+    else
+        call CscopeFind(qt, a:pat)
+    endif
+    call feedkeys("\<CR>")
 endfunction
 
 if !exists('g:cscope_ignore_files')
