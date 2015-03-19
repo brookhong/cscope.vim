@@ -1,70 +1,89 @@
-This plugin helps you to create cscope database and connect to existing proper database automatically.
+*cscove.txt*            cscove, a smart cscope helper for vim.          *cscove*
 
-To use the plugin, just open your source file with VIM, and press <leader>fs with cursor on a function name.
+1. About cscove                                    |cscove-about|
+2. Quick Start                                     |cscove-quickstart|
+4. Interactive Mode                                |cscove-interactive|
+5. Key Mappings                                    |cscove-keymappings|
+6. Options                                         |cscove-options|
 
-The plugin will try to find and connect a proper cscope database for current file. If there is no proper cscope database for current file, you are prompted to specify a folder with a string like --
+=============================================================================
+1. ABOUT cscove ~
+                                                               *cscove-about*
 
-    *** Can not find proper cscope db, please input a path to create cscope db for. ***
+Cscove is a smart cscope helper for vim.
 
-Then the plugin will create cscope database for you, connect to it, and find what you want.
+It will try to find a proper cscope database for current file, then connect to
+it. If there is no proper cscope database for current file, you are prompted to
+specify a folder with a string like --
 
-The found result will be listed in location list window, press <leader>l to toggle it.
+    Can not find proper cscope db, please input a path to create cscope db for.
 
-Next time when you open the same file or other file that the cscope database can be used for, the plugin will connect to the cscope database automatically. You need not take care of anything about cscope database.
+Then the plugin will create cscope database for you, connect to it, and find
+what you want. The found result will be listed in a location list window. Next
+time when you open the same file or other file that the cscope database can be
+used for, the plugin will connect to the cscope database automatically. You
+need not take care of anything about cscope database.
 
-If you want to find something under some path without openning some file, use CscopeFind.
+When you have a file edited in those folders for which cscope databases have
+been created, cscove will automatically update the corresponding database.
 
-    :*CscopeFind* <something_to_find> [path_to_find]
+                                                               *CscopeList*
 
-    If there is no path_to_find provided, current working directory will be used.
+List all existing cscope databases that cscove has created for you.
 
-There is one case you need take care cscope database. If you have some files added/edited in those folders for which cscope databases have been created, then you want to refresh the cscope database, you can use command --
+    :CscopeList
 
-    :*CscopeGen* [path_to_the_folder]
+Here is example output from |:CscopeList|
 
-    If there is no path_to_the_folder provided, all existing cscope databases will be re-created.
+     ID                   COUNT    PATH
+    *1337668712           3        /works/vim/src
 
-For exmample,
+    '*'         means the db has been connected.
+    ID          id of the db.
+    COUNT       how many times this db has ever been used.
+    PATH        which folder the db is for.
+                                                               *CscopeClear*
 
-    :*CscopeGen* /works/vim/src
+Remove all existing cscope databases that cscove has created for you.
 
-Other commands --
+    :CscopeClear
 
-    :*CscopeClear*    to remove all existing cscope databases
-    :*CscopeList*     to list all existing cscope databases
 
-Here is example output from :CscopeList
-
- ID                   COUNT    PATH
-*1337668712           3        /works/vim/src
-
-'*'         means the db has been connected.
-ID          id of the db.
-COUNT       how many times this db has ever been used.
-PATH        which folder the db is for.
-
-Default settings are here, you can modify it to create your own key mappings.
-
-    " in case your cscope execute is not in system path.
-    " let g:cscope_cmd = 'D:/tools/vim/cscope.exe'
-    " s: Find this C symbol
-    map <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
-    " g: Find this definition
-    map <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
-    " d: Find functions called by this function
-    map <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
-    " c: Find functions calling this function
-    map <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
-    " t: Find this text string
-    map <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
-    " e: Find this egrep pattern
-    map <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
-    " f: Find this file
-    map <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
-    " i: Find files #including this file
-    map <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
-    map <leader>l :call ToggleLocationList()<CR>
+                                                               *cscope-options*
 
 Preload path settings help you to load some common libraries by default. For example,
 
     let g:cscope_preload_path="/usr/include/c++/;/works/phplib/trunk/php"
+
+                                                               *cscope-keymappings*
+Below is the recommended key mappings.
+
+    nnoremap <leader>fa :call CscopeFindInteractive(expand('<cword>'))<CR>
+
+    " s: Find this C symbol
+    nnoremap  <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
+    " g: Find this definition
+    nnoremap  <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
+    " d: Find functions called by this function
+    nnoremap  <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
+    " c: Find functions calling this function
+    nnoremap  <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
+    " t: Find this text string
+    nnoremap  <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
+    " e: Find this egrep pattern
+    nnoremap  <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
+    " f: Find this file
+    nnoremap  <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
+    " i: Find files #including this file
+    nnoremap  <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
+    nnoremap  <leader>l :call ToggleLocationList()<CR>
+
+                                                               *cscope-interactive*
+
+cscope can search your target by different type, see |cscope-find|.  If you would
+not like to create different keymappings for different {querytype}. Use
+|cscope#findInteractive|.
+
+    nnoremap <leader>fa :call CscopeFindInteractive(expand('<cword>'))<CR>
+
+" vim: set expandtab sts=2 ts=2 sw=2 tw=78 ft=help norl:

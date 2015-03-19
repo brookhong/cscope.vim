@@ -1,103 +1,66 @@
 " vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab foldmethod=marker
-"    Copyright: Copyright (C) 2012 Brook Hong
+"    Copyright: Copyright (C) 2012-2015 Brook Hong
 "    License: The MIT License
 "
+
+if !exists('g:cscope_silent')
+  let g:cscope_silent = 0
+endif
+
+function! s:Echo(msg)
+  if g:cscope_silent == 0
+    echo a:msg
+  endif
+endfunction
+
 if !exists('g:cscope_cmd')
   if executable('cscope')
     let g:cscope_cmd = 'cscope'
   else
-    echo 'cscope: command not found'
+    call <SID>Echo('cscope: command not found')
     finish
   endif
 endif
 
 set cscopequickfix=s-,g-,d-,c-,t-,e-,f-,i-
 
-com! -nargs=? -complete=dir CscopeGen call CreateCscopeDB("<args>")
-com! -nargs=0 CscopeList call <SID>ListDBs()
-com! -nargs=0 CscopeClear call <SID>ClearCscopeDB()
-com! -nargs=+ -complete=dir CscopeFind call CscopeFind('t', <q-args>)
-
-function! s:ClearCscopeDB()
+function! s:ClearDBs()
   cs kill -1
-  let s:loaded_dbs = []
   let s:dbs = {}
-  let s:dbstat = {}
-  let s:db_dirs = []
   call <SID>RmDBfiles()
   call writefile([], s:index_file)
 endfunction
+com! -nargs=0 CscopeClear call <SID>ClearDBs()
 
-function! s:GetDirById(id)
-  let dir = ""
-  for d in s:db_dirs
-    if s:dbs[d] == a:id
-      let dir = d
-      break
+function! s:GetBestPath(dir)
+  let f = substitute(a:dir,'\\','/','g')
+  let bestDir = ""
+  for d in keys(s:dbs)
+    if stridx(f, d) == 0 && len(d) > len(bestDir)
+      let bestDir = d
     endif
   endfor
-  return dir
+  return bestDir
 endfunction
 
 function! s:ListDBs()
-  let s = [' ID                   COUNT    PATH']
-  for d in s:db_dirs
-    if count(s:loaded_dbs,d)
-      let l = printf("*%d  %10d        %s",s:dbs[d],s:dbstat[d],d)
-    else
-      let l = printf(" %d  %10d        %s",s:dbs[d],s:dbstat[d],d)
-    endif
-    call add(s, l)
-  endfor
-  echo join(s, "\n")
-endfunction
-
-function! ToggleLocationList()
-  let l:own = winnr()
-  lw
-  let l:cwn = winnr()
-  if(l:cwn == l:own)
-    if &buftype == 'quickfix'
-      lclose
-    elseif len(getloclist(winnr())) > 0
-      lclose
-    else
-      echohl WarningMsg | echo "No location list." | echohl None
-    endif
+  let dirs = keys(s:dbs)
+  if len(dirs) == 0
+    echo "You have no cscope dbs now."
+  else
+    let s = [' ID                   LOADTIMES    PATH']
+    for d in dirs
+      if s:dbs[d]['loaded'] == 1
+        let l = printf("*%d  %10d            %s",s:dbs[d]['id'],s:dbs[d]['loadtimes'],d)
+      else
+        let l = printf(" %d  %10d            %s",s:dbs[d]['id'],s:dbs[d]['loadtimes'],d)
+      endif
+      call add(s, l)
+    endfor
+    echo join(s, "\n")
   endif
 endfunction
-
-function! CscopeFind(action, word_dir)
-  let args = split(a:word_dir, ' ')
-  let l:word = args[0]
-  if len(args) > 1
-    call <SID>AutoloadCscopeDB(args[1])
-  elseif bufname('%') != ''
-    call <SID>AutoloadCscopeDB(expand('%:p:h'))
-  endif
-
-  call <SID>PreloadCscopeDB()
-  if len(s:loaded_dbs) > 0
-    try
-      exe ':lcs f '.a:action.' '.l:word
-      lw
-    catch
-      echohl WarningMsg | echo 'Can not find '.l:word.' with querytype as '.a:action.'.' | echohl None
-    endtry
-  endif
-endfunction
-
-function! CscopeFindInteractive(pat)
-    call inputsave()
-    let qt = input("\nChoose a querytype for '".a:pat."'(:help cscope-find)\n  c: functions calling this function\n  d: functions called by this function\n  e: this egrep pattern\n  f: this file\n  g: this definition\n  i: files #including this file\n  s: this C symbol\n  t: this text string\n\n  or\n  <querytype><pattern> to query `pattern` instead of '".a:pat."' as `querytype`, Ex. `smain` to query a C symbol named 'main'.\n> ")
-    call inputrestore()
-    if len(qt) > 1
-        call CscopeFind(qt[0], qt[1:])
-    else
-        call CscopeFind(qt, a:pat)
-    endif
-    call feedkeys("\<CR>")
-endfunction
+com! -nargs=0 CscopeList call <SID>ListDBs()
 
 if !exists('g:cscope_ignore_files')
   let g:cscope_ignore_files = '\.3dm$\|\.3g2$\|\.3gp$\|\.7z$\|\.a$\|\.a.out$\|\.accdb$\|\.ai$\|\.aif$\|\.aiff$\|\.app$\|\.arj$\|\.asf$\|\.asx$\|\.au$\|\.avi$\|\.bak$\|\.bin$\|\.bmp$\|\.bz2$\|\.cab$\|\.cer$\|\.cfm$\|\.cgi$\|\.com$\|\.cpl$\|\.csr$\|\.csv$\|\.cue$\|\.cur$\|\.dat$\|\.db$\|\.dbf$\|\.dbx$\|\.dds$\|\.deb$\|\.dem$\|\.dll$\|\.dmg$\|\.dmp$\|\.dng$\|\.doc$\|\.docx$\|\.drv$\|\.dwg$\|\.dxf$\|\.ear$\|\.efx$\|\.eps$\|\.epub$\|\.exe$\|\.fla$\|\.flv$\|\.fnt$\|\.fon$\|\.gadget$\|\.gam$\|\.gbr$\|\.ged$\|\.gif$\|\.gpx$\|\.gz$\|\.hqx$\|\.ibooks$\|\.icns$\|\.ico$\|\.ics$\|\.iff$\|\.img$\|\.indd$\|\.iso$\|\.jar$\|\.jpeg$\|\.jpg$\|\.key$\|\.keychain$\|\.kml$\|\.lnk$\|\.lz$\|\.m3u$\|\.m4a$\|\.max$\|\.mdb$\|\.mid$\|\.mim$\|\.moov$\|\.mov$\|\.movie$\|\.mp2$\|\.mp3$\|\.mp4$\|\.mpa$\|\.mpeg$\|\.mpg$\|\.msg$\|\.msi$\|\.nes$\|\.o$\|\.obj$\|\.ocx$\|\.odt$\|\.otf$\|\.pages$\|\.part$\|\.pct$\|\.pdb$\|\.pdf$\|\.pif$\|\.pkg$\|\.plugin$\|\.png$\|\.pps$\|\.ppt$\|\.pptx$\|\.prf$\|\.ps$\|\.psd$\|\.pspimage$\|\.qt$\|\.ra$\|\.rar$\|\.rm$\|\.rom$\|\.rpm$\|\.rtf$\|\.sav$\|\.scr$\|\.sdf$\|\.sea$\|\.sit$\|\.sitx$\|\.sln$\|\.smi$\|\.so$\|\.svg$\|\.swf$\|\.swp$\|\.sys$\|\.tar$\|\.tar.gz$\|\.tax2010$\|\.tga$\|\.thm$\|\.tif$\|\.tiff$\|\.tlb$\|\.tmp$\|\.toast$\|\.torrent$\|\.ttc$\|\.ttf$\|\.uu$\|\.uue$\|\.vb$\|\.vcd$\|\.vcf$\|\.vcxproj$\|\.vob$\|\.war$\|\.wav$\|\.wma$\|\.wmv$\|\.wpd$\|\.wps$\|\.xll$\|\.xlr$\|\.xls$\|\.xlsx$\|\.xpi$\|\.yuv$\|\.Z$\|\.zip$\|\.zipx$\|\.lib$\|\.res$\|\.rc$\|\.out$\|\.cache$\|\.tgz$\|\.gho$\|\.ghs$'
@@ -107,14 +70,8 @@ if exists('g:cscope_ignore_strict') && g:cscope_ignore_strict == 1
   let g:cscope_ignore_files = g:cscope_ignore_files.'\|\.xml$\|\.yml$\|\.ini$\|\.conf$\|\.css$\|\.htc$\|\.bat$\|\.sh$\|\.txt$\|\.log$\|\.dtd$\|\.xsd$'
 endif
 
-if !exists('g:cscope_files_kept')
-  let g:cscope_files_kept = 0
-endif
-
 let s:cscope_vim_dir = substitute($HOME,'\\','/','g')."/.cscope.vim"
 let s:index_file = s:cscope_vim_dir.'/index'
-let s:db_dirs = []
-let s:loaded_dbs = []
 
 function! s:ListFiles(dir)
   let d = []
@@ -155,7 +112,6 @@ endfunction
 
 function! s:LoadIndex()
   let s:dbs = {}
-  let s:dbstat = {}
   if ! isdirectory(s:cscope_vim_dir)
     call mkdir(s:cscope_vim_dir)
   elseif filereadable(s:index_file)
@@ -169,8 +125,10 @@ function! s:LoadIndex()
         let db_file = s:cscope_vim_dir.'/'.e[2].'.db'
         if filereadable(db_file)
           if isdirectory(e[1])
-            let s:dbs[e[1]] = e[2]
-            let s:dbstat[e[1]] = e[3]
+            let s:dbs[e[1]] = {}
+            let s:dbs[e[1]]['id'] = e[2]
+            let s:dbs[e[1]]['loadtimes'] = e[3]
+            let s:dbs[e[1]]['loaded'] = 0
           else
             call delete(db_file)
           endif
@@ -180,45 +138,25 @@ function! s:LoadIndex()
   else
     call <SID>RmDBfiles()
   endif
-  let s:db_dirs = keys(s:dbs)
 endfunction
 call <SID>LoadIndex()
 
 function! s:FlushIndex()
   let lines = []
-  for d in s:db_dirs
-    call add(lines, d.'|'.s:dbs[d].'|'.s:dbstat[d])
+  for d in keys(s:dbs)
+    call add(lines, d.'|'.s:dbs[d]['id'].'|'.s:dbs[d]['loadtimes'])
   endfor
   call writefile(lines, s:index_file)
 endfunction
 
-function! s:GetIndex(dir)
-  let id = 0
-  if count(s:db_dirs, a:dir)
-    let id = s:dbs[a:dir]
-  else
-    let id = localtime()
-    let s:dbs[a:dir] = id
-    let s:dbstat[a:dir] = 0
-    call add(s:db_dirs, a:dir)
-    call <SID>FlushIndex()
+function! s:_CreateDB(dir)
+  let id = s:dbs[a:dir]['id']
+  let cscope_files = s:cscope_vim_dir."/".id.".files"
+  if ! filereadable(cscope_files)
+    let files = <SID>ListFiles(a:dir)
+    call writefile(files, cscope_files)
   endif
-  return id
-endfunction
-
-function! s:_CreateCscopeDB(dir,id)
-  if ! isdirectory(s:cscope_vim_dir)
-    call mkdir(s:cscope_vim_dir)
-  endif
-  let cscope_files = s:cscope_vim_dir."/".a:id.".files"
-  let cscope_db = s:cscope_vim_dir.'/'.a:id.'.db'
-  let files = <SID>ListFiles(a:dir)
-  call writefile(files, cscope_files)
-  exe '!'.g:cscope_cmd.' -b -i '.cscope_files
-  call rename('cscope.out', cscope_db)
-  if g:cscope_files_kept == 0
-    call delete(cscope_files)
-  endif
+  exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f'.s:cscope_vim_dir.'/'.id.'.db'
 endfunction
 
 function! s:CheckAbsolutePath(dir, defaultPath)
@@ -239,93 +177,109 @@ function! s:CheckAbsolutePath(dir, defaultPath)
   return d
 endfunction
 
-function! CreateCscopeDB(dir)
-  cs kill -1
-  let s:loaded_dbs = []
-  let dirs = []
-  if (a:dir == "")
-    let dirs = s:db_dirs
-  else
-    let cwd = a:dir
-    if cwd =~ "^\\d\\+$"
-      let cwd = <SID>GetDirById(cwd)
-    endif
-    let cwd = <SID>CheckAbsolutePath(cwd, getcwd())
-    let dirs = [cwd]
+function! s:InitDB(dir)
+  let id = localtime()
+  let s:dbs[a:dir] = {}
+  let s:dbs[a:dir]['id'] = id
+  let s:dbs[a:dir]['loadtimes'] = 0
+  let s:dbs[a:dir]['loaded'] = 0
+  call <SID>FlushIndex()
+  if ! filereadable(s:cscope_vim_dir.'/'.id.'.db')
+    call <SID>_CreateDB(a:dir)
   endif
-  for d in dirs
-    if count(s:db_dirs, d)
-      let id = s:dbs[d]
-      let cscope_db = s:cscope_vim_dir.'/'.id.'.db'
-      if filereadable(cscope_db)
-        call delete(cscope_db)
-      endif
-    else
-      call add(s:db_dirs, d)
-      let s:dbstat[d] = 0
-    endif
-    let id = localtime()
-    let s:dbs[d] = id
-    call <SID>FlushIndex()
-    call <SID>_CreateCscopeDB(d, id)
-  endfor
 endfunction
 
-function! s:AutoloadCscopeDB(dir)
-  let f = substitute(a:dir,'\\','/','g')
-  for d in s:loaded_dbs
-    if f =~ d.'.*$'
-      return 1
-    endif
-  endfor
-  let m_db_dirs = []
-  for d in s:db_dirs
-    if f =~ d.'.*$'
-      call add(m_db_dirs, d)
-    endif
-  endfor
-  let l = len(m_db_dirs)
-  let m_db = ''
-  if l > 0
-    let m_db_dirs = sort(m_db_dirs)
-    let m_dir = m_db_dirs[l-1]
-    let m_db = s:cscope_vim_dir.'/'.s:dbs[m_dir].'.db'
-  else
+function! s:LoadDB(dir)
+  exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'.db'
+  let s:dbs[a:dir]['loadtimes'] = s:dbs[a:dir]['loadtimes']+1
+  call <SID>FlushIndex()
+  let s:dbs[a:dir]['loaded'] = 1
+endfunction
+
+function! s:AutoloadDB(dir)
+  let m_dir = <SID>GetBestPath(a:dir)
+  if m_dir == ""
     echohl WarningMsg | echo "Can not find proper cscope db, please input a path to generate cscope db for." | echohl None
     let m_dir = input("", a:dir, 'dir')
     if m_dir != ''
       let m_dir = <SID>CheckAbsolutePath(m_dir, a:dir)
-      let id = <SID>GetIndex(m_dir)
-      let m_db = s:cscope_vim_dir.'/'.id.'.db'
-      if ! filereadable(m_db)
-        call <SID>_CreateCscopeDB(m_dir, id)
-      endif
+      call <SID>InitDB(m_dir)
+      call <SID>LoadDB(m_dir)
     endif
-  endif
-  if m_db != ''
-    exe 'cs add '.m_db
-    let s:dbstat[m_dir] = s:dbstat[m_dir]+1
-    call <SID>FlushIndex()
-    call add(s:loaded_dbs, m_dir)
+  else
+    if s:dbs[m_dir]['loaded'] == 0
+      call <SID>LoadDB(m_dir)
+    endif
   endif
 endfunction
 
-function! s:PreloadCscopeDB()
-  if exists('g:cscope_preload_path')
-    let dirs = split(g:cscope_preload_path, ';')
-    for m_dir in dirs
-      let m_dir = <SID>CheckAbsolutePath(m_dir, m_dir)
-      let id = <SID>GetIndex(m_dir)
-      let m_db = s:cscope_vim_dir.'/'.id.'.db'
-      if ! filereadable(m_db)
-        call <SID>_CreateCscopeDB(m_dir, id)
-      endif
-      if m_db != ''
-        exe 'cs add '.m_db
-        let s:dbstat[m_dir] = s:dbstat[m_dir]+1
-        call <SID>FlushIndex()
-        call add(s:loaded_dbs, m_dir)
-      endif
-    endfor
+function! s:PreloadDB()
+  let dirs = split(g:cscope_preload_path, ';')
+  for m_dir in dirs
+    let m_dir = <SID>CheckAbsolutePath(m_dir, m_dir)
+    if has_key(s:dbs, m_dir)
+      call <SID>_CreateDB(m_dir)
+    else
+      call <SID>InitDB(m_dir)
+    endif
+    call <SID>LoadDB(m_dir)
+  endfor
+endfunction
+if exists('g:cscope_preload_path')
+  call <SID>PreloadDB()
+endif
+
+function! ToggleLocationList()
+  let l:own = winnr()
+  lw
+  let l:cwn = winnr()
+  if(l:cwn == l:own)
+    if &buftype == 'quickfix'
+      lclose
+    elseif len(getloclist(winnr())) > 0
+      lclose
+    else
+      echohl WarningMsg | echo "No location list." | echohl None
+    endif
   endif
 endfunction
+
+function! cscope#find(action, word_dir)
+  let args = split(a:word_dir, ' ')
+  let l:word = args[0]
+  if len(args) > 1
+    call <SID>AutoloadDB(args[1])
+  elseif bufname('%') != ''
+    call <SID>AutoloadDB(expand('%:p:h'))
+  endif
+  try
+    exe ':lcs f '.a:action.' '.l:word
+    lw
+  catch
+    echohl WarningMsg | echo 'Can not find '.l:word.' with querytype as '.a:action.'.' | echohl None
+  endtry
+endfunction
+
+function! cscope#findInteractive(pat)
+    call inputsave()
+    let qt = input("\nChoose a querytype for '".a:pat."'(:help cscope-find)\n  c: functions calling this function\n  d: functions called by this function\n  e: this egrep pattern\n  f: this file\n  g: this definition\n  i: files #including this file\n  s: this C symbol\n  t: this text string\n\n  or\n  <querytype><pattern> to query `pattern` instead of '".a:pat."' as `querytype`, Ex. `smain` to query a C symbol named 'main'.\n> ")
+    call inputrestore()
+    if len(qt) > 1
+        call cscope#find(qt[0], qt[1:])
+    else
+        call cscope#find(qt, a:pat)
+    endif
+    call feedkeys("\<CR>")
+endfunction
+
+function! cscope#autoupdateDB()
+  if expand('%:t') !~ g:cscope_ignore_files
+    let m_dir = <SID>GetBestPath(expand('%:p:h'))
+    if m_dir != ""
+      call <SID>_CreateDB(m_dir)
+      cs reset
+      call <SID>Echo('cscope db updated automatically, you can turn off this message by setting g:cscope_silent 1.')
+    endif
+  endif
+endfunction
+au BufWritePost * call cscope#autoupdateDB()
