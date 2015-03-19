@@ -49,3 +49,6 @@ Some optional key mappings to search directly.
     nnoremap  <leader>ff :call cscope#find('f', expand('<cword>'))<CR>
     " i: Find files #including this file
     nnoremap  <leader>fi :call cscope#find('i', expand('<cword>'))<CR>
+
+# Screencast
+![cscove.vim](https://brookhong.github.io/assets/images/cscove.gif)
