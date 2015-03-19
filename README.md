@@ -17,13 +17,13 @@ need not take care of anything about cscope database.
 When you have a file edited/added in those folders for which cscope databases
 have been created, cscove will automatically update the corresponding database.
 
-Cscove free you from creating/connecting/updating cscope database, let you
+Cscove frees you from creating/connecting/updating cscope database, let you
 focus on code browsing.
 
 # Example settings
 The default key mappings has been removed from the plugin itself, since users
 may prefer different choices.
-So to use the pluing, you must define you own key mappings first.
+So to use the plugin, you must define your own key mappings first.
 
 Below is the minimum key mappings.
 
