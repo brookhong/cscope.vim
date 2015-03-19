@@ -149,12 +149,20 @@ function! s:FlushIndex()
   call writefile(lines, s:index_file)
 endfunction
 
-function! s:_CreateDB(dir)
+function! s:_CreateDB(dir, newfile)
   let id = s:dbs[a:dir]['id']
   let cscope_files = s:cscope_vim_dir."/".id.".files"
   if ! filereadable(cscope_files)
     let files = <SID>ListFiles(a:dir)
     call writefile(files, cscope_files)
+  elseif len(a:newfile) > 0
+    let files = readfile(cscope_files)
+    if count(files, a:newfile) == 0
+      call add(files, a:newfile)
+      call writefile(files, cscope_files)
+      exec 'cs kill '.s:cscope_vim_dir.'/'.id.'.db'
+      let s:dbs[a:dir]['loaded'] = 0
+    endif
   endif
   exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f'.s:cscope_vim_dir.'/'.id.'.db'
 endfunction
@@ -184,9 +192,7 @@ function! s:InitDB(dir)
   let s:dbs[a:dir]['loadtimes'] = 0
   let s:dbs[a:dir]['loaded'] = 0
   call <SID>FlushIndex()
-  if ! filereadable(s:cscope_vim_dir.'/'.id.'.db')
-    call <SID>_CreateDB(a:dir)
-  endif
+  call <SID>_CreateDB(a:dir, "")
 endfunction
 
 function! s:LoadDB(dir)
@@ -218,7 +224,7 @@ function! s:PreloadDB()
   for m_dir in dirs
     let m_dir = <SID>CheckAbsolutePath(m_dir, m_dir)
     if has_key(s:dbs, m_dir)
-      call <SID>_CreateDB(m_dir)
+      call <SID>_CreateDB(m_dir, "")
     else
       call <SID>InitDB(m_dir)
     endif
@@ -272,14 +278,13 @@ function! cscope#findInteractive(pat)
     call feedkeys("\<CR>")
 endfunction
 
-function! cscope#autoupdateDB()
+function! cscope#updateDB()
   if expand('%:t') !~ g:cscope_ignore_files
     let m_dir = <SID>GetBestPath(expand('%:p:h'))
     if m_dir != ""
-      call <SID>_CreateDB(m_dir)
+      call <SID>_CreateDB(m_dir, expand('%:p'))
       cs reset
       call <SID>Echo('cscope db updated automatically, you can turn off this message by setting g:cscope_silent 1.')
     endif
   endif
 endfunction
-au BufWritePost * call cscope#autoupdateDB()
