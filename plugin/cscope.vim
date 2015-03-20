@@ -117,18 +117,19 @@ function! s:LoadIndex()
   elseif filereadable(s:index_file)
     let idx = readfile(s:index_file)
     for i in idx
-      let e = matchlist(i,'\(.*\)|\(.*\)|\(.*\)')
+      let e = split(i, '|')
       if len(e) == 0
         call delete(s:index_file)
         call <SID>RmDBfiles()
       else
-        let db_file = s:cscope_vim_dir.'/'.e[2].'.db'
+        let db_file = s:cscope_vim_dir.'/'.e[1].'.db'
         if filereadable(db_file)
-          if isdirectory(e[1])
-            let s:dbs[e[1]] = {}
-            let s:dbs[e[1]]['id'] = e[2]
-            let s:dbs[e[1]]['loadtimes'] = e[3]
-            let s:dbs[e[1]]['loaded'] = 0
+          if isdirectory(e[0])
+            let s:dbs[e[0]] = {}
+            let s:dbs[e[0]]['id'] = e[1]
+            let s:dbs[e[0]]['loadtimes'] = e[2]
+            let s:dbs[e[0]]['dirty'] = e[3]
+            let s:dbs[e[0]]['loaded'] = 0
           else
             call delete(db_file)
           endif
@@ -144,27 +145,31 @@ call <SID>LoadIndex()
 function! s:FlushIndex()
   let lines = []
   for d in keys(s:dbs)
-    call add(lines, d.'|'.s:dbs[d]['id'].'|'.s:dbs[d]['loadtimes'])
+    call add(lines, d.'|'.s:dbs[d]['id'].'|'.s:dbs[d]['loadtimes'].'|'.s:dbs[d]['dirty'])
   endfor
   call writefile(lines, s:index_file)
 endfunction
 
-function! s:_CreateDB(dir, newfile)
+function! s:CheckNewFile(dir, newfile)
+  let id = s:dbs[a:dir]['id']
+  let cscope_files = s:cscope_vim_dir."/".id.".files"
+  let files = readfile(cscope_files)
+  if count(files, a:newfile) == 0
+    call add(files, a:newfile)
+    call writefile(files, cscope_files)
+  endif
+endfunction
+
+function! s:_CreateDB(dir)
   let id = s:dbs[a:dir]['id']
   let cscope_files = s:cscope_vim_dir."/".id.".files"
   if ! filereadable(cscope_files)
     let files = <SID>ListFiles(a:dir)
     call writefile(files, cscope_files)
-  elseif len(a:newfile) > 0
-    let files = readfile(cscope_files)
-    if count(files, a:newfile) == 0
-      call add(files, a:newfile)
-      call writefile(files, cscope_files)
-      exec 'cs kill '.s:cscope_vim_dir.'/'.id.'.db'
-      let s:dbs[a:dir]['loaded'] = 0
-    endif
   endif
+  exec 'cs kill '.s:cscope_vim_dir.'/'.id.'.db'
   exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f'.s:cscope_vim_dir.'/'.id.'.db'
+  let s:dbs[a:dir]['dirty'] = 0
 endfunction
 
 function! s:CheckAbsolutePath(dir, defaultPath)
@@ -190,9 +195,10 @@ function! s:InitDB(dir)
   let s:dbs[a:dir] = {}
   let s:dbs[a:dir]['id'] = id
   let s:dbs[a:dir]['loadtimes'] = 0
+  let s:dbs[a:dir]['dirty'] = 0
   let s:dbs[a:dir]['loaded'] = 0
   call <SID>FlushIndex()
-  call <SID>_CreateDB(a:dir, "")
+  call <SID>_CreateDB(a:dir)
 endfunction
 
 function! s:LoadDB(dir)
@@ -224,7 +230,7 @@ function! s:PreloadDB()
   for m_dir in dirs
     let m_dir = <SID>CheckAbsolutePath(m_dir, m_dir)
     if has_key(s:dbs, m_dir)
-      call <SID>_CreateDB(m_dir, "")
+      call <SID>_CreateDB(m_dir)
     else
       call <SID>InitDB(m_dir)
     endif
@@ -258,6 +264,15 @@ function! cscope#find(action, word_dir)
   elseif bufname('%') != ''
     call <SID>AutoloadDB(expand('%:p:h'))
   endif
+  let dirtyDirs = []
+  for d in keys(s:dbs)
+    if s:dbs[d]['dirty'] = 1
+      call add(dirtyDirs, d)
+    endif
+  endfor
+  if len(dirtyDirs) > 0
+    call <SID>updateDBs(dirtyDirs)
+  endif
   try
     exe ':lcs f '.a:action.' '.l:word
     lw
@@ -278,13 +293,25 @@ function! cscope#findInteractive(pat)
     call feedkeys("\<CR>")
 endfunction
 
-function! cscope#updateDB()
+function! s:OnChange()
   if expand('%:t') !~ g:cscope_ignore_files
     let m_dir = <SID>GetBestPath(expand('%:p:h'))
     if m_dir != ""
-      call <SID>_CreateDB(m_dir, expand('%:p'))
-      cs reset
-      call <SID>Echo('cscope db updated automatically, you can turn off this message by setting g:cscope_silent 1.')
+      let s:dbs[m_dir]['dirty'] = 1
+      call <SID>FlushIndex()
+      call <SID>CheckNewFile(m_dir, expand('%:p'))
+      call <SID>Echo('Your cscope db will be updated automatically, you can turn off this message by setting g:cscope_silent 1.')
     endif
   endif
+endfunction
+
+function! s:updateDBs(dirs)
+  for d in a:dirs
+    call <SID>_CreateDB(d)
+  endfor
+  cs reset
+endfunction
+
+function! cscope#updateDB()
+  call <SID>updateDBs(keys(s:dbs))
 endfunction
