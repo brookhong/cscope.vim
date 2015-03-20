@@ -42,7 +42,6 @@ Below is the minimum key mappings.
 
     nnoremap <leader>fa :call cscope#findInteractive(expand('<cword>'))<CR>
     nnoremap <leader>l :call ToggleLocationList()<CR>
-    au BufWritePost * call cscope#updateDB()
 
 Some optional key mappings to search directly.
 
@@ -77,7 +76,8 @@ cscope#findInteractive({pattern})
             provide an interactive interface for finding what you want.
 
 cscope#updateDB()
-            update corresponding database for current file.
+            update all existing cscope databases in case that you disable cscope
+            database auto update.
 
 ToggleLocationList()
             toggle the location list for found results.
@@ -111,6 +111,12 @@ Remove all existing cscope databases that cscove has created for you.
 5. OPTIONS ~
                                                                *cscove-options*
 
+                                                                *'g:cscope_auto_update'*
+Use this option to disable cscope database auto update.
+  let g:cscope_auto_update = 0
+
+Then you can update your cscope databases manually by:
+  call cscope#updateDB()
                                                                 *'g:cscope_silent'*
 Use this option to toggle messages for database updated.
   let g:cscope_silent = 1

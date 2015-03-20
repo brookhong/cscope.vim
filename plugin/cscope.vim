@@ -7,6 +7,10 @@ if !exists('g:cscope_silent')
   let g:cscope_silent = 0
 endif
 
+if !exists('g:cscope_auto_update')
+  let g:cscope_auto_update = 1
+endif
+
 function! s:Echo(msg)
   if g:cscope_silent == 0
     echo a:msg
@@ -50,10 +54,11 @@ function! s:ListDBs()
   else
     let s = [' ID                   LOADTIMES    PATH']
     for d in dirs
-      if s:dbs[d]['loaded'] == 1
-        let l = printf("*%d  %10d            %s",s:dbs[d]['id'],s:dbs[d]['loadtimes'],d)
+      let id = s:dbs[d]['id']
+      if cscope_connection(2, s:cscope_vim_dir.'/'.id.'.db') == 1
+        let l = printf("*%d  %10d            %s", id, s:dbs[d]['loadtimes'], d)
       else
-        let l = printf(" %d  %10d            %s",s:dbs[d]['id'],s:dbs[d]['loadtimes'],d)
+        let l = printf(" %d  %10d            %s", id, s:dbs[d]['loadtimes'], d)
       endif
       call add(s, l)
     endfor
@@ -128,8 +133,7 @@ function! s:LoadIndex()
             let s:dbs[e[0]] = {}
             let s:dbs[e[0]]['id'] = e[1]
             let s:dbs[e[0]]['loadtimes'] = e[2]
-            let s:dbs[e[0]]['dirty'] = e[3]
-            let s:dbs[e[0]]['loaded'] = 0
+            let s:dbs[e[0]]['dirty'] = (len(e) > 3) ? e[3] :0
           else
             call delete(db_file)
           endif
@@ -196,16 +200,14 @@ function! s:InitDB(dir)
   let s:dbs[a:dir]['id'] = id
   let s:dbs[a:dir]['loadtimes'] = 0
   let s:dbs[a:dir]['dirty'] = 0
-  let s:dbs[a:dir]['loaded'] = 0
-  call <SID>FlushIndex()
   call <SID>_CreateDB(a:dir)
+  call <SID>FlushIndex()
 endfunction
 
 function! s:LoadDB(dir)
   exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'.db'
   let s:dbs[a:dir]['loadtimes'] = s:dbs[a:dir]['loadtimes']+1
   call <SID>FlushIndex()
-  let s:dbs[a:dir]['loaded'] = 1
 endfunction
 
 function! s:AutoloadDB(dir)
@@ -219,7 +221,8 @@ function! s:AutoloadDB(dir)
       call <SID>LoadDB(m_dir)
     endif
   else
-    if s:dbs[m_dir]['loaded'] == 0
+    let id = s:dbs[m_dir]['id']
+    if cscope_connection(2, s:cscope_vim_dir.'/'.id.'.db') == 0
       call <SID>LoadDB(m_dir)
     endif
   endif
@@ -256,28 +259,22 @@ function! ToggleLocationList()
   endif
 endfunction
 
-function! cscope#find(action, word_dir)
-  let args = split(a:word_dir, ' ')
-  let l:word = args[0]
-  if len(args) > 1
-    call <SID>AutoloadDB(args[1])
-  elseif bufname('%') != ''
-    call <SID>AutoloadDB(expand('%:p:h'))
-  endif
+function! cscope#find(action, word)
   let dirtyDirs = []
   for d in keys(s:dbs)
-    if s:dbs[d]['dirty'] = 1
+    if s:dbs[d]['dirty'] == 1
       call add(dirtyDirs, d)
     endif
   endfor
   if len(dirtyDirs) > 0
     call <SID>updateDBs(dirtyDirs)
   endif
+  call <SID>AutoloadDB(expand('%:p:h'))
   try
-    exe ':lcs f '.a:action.' '.l:word
+    exe ':lcs f '.a:action.' '.a:word
     lw
   catch
-    echohl WarningMsg | echo 'Can not find '.l:word.' with querytype as '.a:action.'.' | echohl None
+    echohl WarningMsg | echo 'Can not find '.a:word.' with querytype as '.a:action.'.' | echohl None
   endtry
 endfunction
 
@@ -304,11 +301,15 @@ function! s:OnChange()
     endif
   endif
 endfunction
+if g:cscope_auto_update == 1
+  au BufWritePost * call <SID>OnChange()
+endif
 
 function! s:updateDBs(dirs)
   for d in a:dirs
     call <SID>_CreateDB(d)
   endfor
+  call <SID>FlushIndex()
   cs reset
 endfunction
 
