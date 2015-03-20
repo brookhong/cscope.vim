@@ -29,7 +29,6 @@ Below is the minimum key mappings.
 
     nnoremap <leader>fa :call cscope#findInteractive(expand('<cword>'))<CR>
     nnoremap <leader>l :call ToggleLocationList()<CR>
-    au BufWritePost * call cscope#updateDB()
 
 Some optional key mappings to search directly.
 
@@ -51,4 +50,5 @@ Some optional key mappings to search directly.
     nnoremap  <leader>fi :call cscope#find('i', expand('<cword>'))<CR>
 
 # Screencast
+Please note that line number changes in location list after file saved.
 ![cscove.vim](https://brookhong.github.io/assets/images/cscove.gif)
