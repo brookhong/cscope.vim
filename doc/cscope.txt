@@ -111,6 +111,9 @@ Remove all existing cscope databases that cscove has created for you.
 5. OPTIONS ~
                                                                *cscove-options*
 
+                                                                *'g:cscope_open_location'*
+Use this option to stop opening location list after searching
+  let g:cscope_open_location = 0
                                                                 *'g:cscope_auto_update'*
 Use this option to disable cscope database auto update.
   let g:cscope_auto_update = 0

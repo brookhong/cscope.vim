@@ -11,6 +11,10 @@ if !exists('g:cscope_auto_update')
   let g:cscope_auto_update = 1
 endif
 
+if !exists('g:cscope_open_location')
+  let g:cscope_open_location = 1
+endif
+
 function! s:Echo(msg)
   if g:cscope_silent == 0
     echo a:msg
@@ -272,7 +276,9 @@ function! cscope#find(action, word)
   call <SID>AutoloadDB(expand('%:p:h'))
   try
     exe ':lcs f '.a:action.' '.a:word
-    lw
+    if g:cscope_open_location == 1
+      lw
+    endif
   catch
     echohl WarningMsg | echo 'Can not find '.a:word.' with querytype as '.a:action.'.' | echohl None
   endtry
@@ -297,6 +303,7 @@ function! s:OnChange()
       let s:dbs[m_dir]['dirty'] = 1
       call <SID>FlushIndex()
       call <SID>CheckNewFile(m_dir, expand('%:p'))
+      redraw
       call <SID>Echo('Your cscope db will be updated automatically, you can turn off this message by setting g:cscope_silent 1.')
     endif
   endif
