@@ -28,7 +28,7 @@ So to use the plugin, you must define your own key mappings first.
 Below is the minimum key mappings.
 
     nnoremap <leader>fa :call cscope#findInteractive(expand('<cword>'))<CR>
-    nnoremap <leader>l :call ToggleLocationList()<CR>
+    nnoremap <leader>l :call cscope#toggleLocationList()<CR>
 
 Some optional key mappings to search directly.
 
