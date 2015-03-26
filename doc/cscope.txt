@@ -40,27 +40,27 @@ So to use the plugin, you must define your own key mappings first.
 
 Below is the minimum key mappings.
 
-    nnoremap <leader>fa :call cscope#findInteractive(expand('<cword>'))<CR>
-    nnoremap <leader>l :call cscope#toggleLocationList()<CR>
+    nnoremap <leader>fa :call CscopeFindInteractive(expand('<cword>'))<CR>
+    nnoremap <leader>l :call ToggleLocationList()<CR>
 
 Some optional key mappings to search directly.
 
     " s: Find this C symbol
-    nnoremap  <leader>fs :call cscope#find('s', expand('<cword>'))<CR>
+    nnoremap  <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
     " g: Find this definition
-    nnoremap  <leader>fg :call cscope#find('g', expand('<cword>'))<CR>
+    nnoremap  <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
     " d: Find functions called by this function
-    nnoremap  <leader>fd :call cscope#find('d', expand('<cword>'))<CR>
+    nnoremap  <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
     " c: Find functions calling this function
-    nnoremap  <leader>fc :call cscope#find('c', expand('<cword>'))<CR>
+    nnoremap  <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
     " t: Find this text string
-    nnoremap  <leader>ft :call cscope#find('t', expand('<cword>'))<CR>
+    nnoremap  <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
     " e: Find this egrep pattern
-    nnoremap  <leader>fe :call cscope#find('e', expand('<cword>'))<CR>
+    nnoremap  <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
     " f: Find this file
-    nnoremap  <leader>ff :call cscope#find('f', expand('<cword>'))<CR>
+    nnoremap  <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
     " i: Find files #including this file
-    nnoremap  <leader>fi :call cscope#find('i', expand('<cword>'))<CR>
+    nnoremap  <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
 
 =============================================================================
 3. FUNCTIONS ~
@@ -68,14 +68,14 @@ Some optional key mappings to search directly.
 
 The plugin provides three public functions.
 
-cscope#find({querytype}, {pattern})
+CscopeFind({querytype}, {pattern})
             search your {pattern} with {querytype} in the database suitable
             for current file.
 
-cscope#findInteractive({pattern})
+CscopeFindInteractive({pattern})
             provide an interactive interface for finding what you want.
 
-cscope#updateDB()
+CscopeUpdateDB()
             update all existing cscope databases in case that you disable cscope
             database auto update.
 
@@ -119,7 +119,7 @@ Use this option to disable cscope database auto update.
   let g:cscope_auto_update = 0
 
 Then you can update your cscope databases manually by:
-  call cscope#updateDB()
+  call CscopeUpdateDB()
                                                                 *'g:cscope_silent'*
 Use this option to toggle messages for database updated.
   let g:cscope_silent = 1
