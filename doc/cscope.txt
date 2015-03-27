@@ -128,10 +128,10 @@ Use this option to toggle messages for database updated.
 Use the option to specify the path to cscope excutalbe, if it is not in PATH.
   let g:cscope_cmd = '/home/brook/bin/cscope'
 
-                                                                *'g:cscope_ignore_files'*
-Specify the extentions you want to ignore when building cscope database, the
-default value is enough for most users.
-  let g:cscope_ignore_files = '\.Z$\|\.zip$\|\.zipx$\|\.lib'
+                                                                *'g:cscope_interested_files'*
+Specify the extentions you want to include when building cscope database, the
+default extentions are listed in interested.txt.
+  let g:cscope_interested_files = '\.c$\|\.cpp$\|\.h$\|\.hpp'
 
                                                                 *'g:cscope_preload_path'*
 Preload path settings help you to load some common libraries by default. For example,

@@ -24,12 +24,9 @@ if !exists('g:cscope_cmd')
   endif
 endif
 
-if !exists('g:cscope_ignore_files')
-  let g:cscope_ignore_files = '\.3dm$\|\.3g2$\|\.3gp$\|\.7z$\|\.a$\|\.a.out$\|\.accdb$\|\.ai$\|\.aif$\|\.aiff$\|\.app$\|\.arj$\|\.asf$\|\.asx$\|\.au$\|\.avi$\|\.bak$\|\.bin$\|\.bmp$\|\.bz2$\|\.cab$\|\.cer$\|\.cfm$\|\.cgi$\|\.com$\|\.cpl$\|\.csr$\|\.csv$\|\.cue$\|\.cur$\|\.dat$\|\.db$\|\.dbf$\|\.dbx$\|\.dds$\|\.deb$\|\.dem$\|\.dll$\|\.dmg$\|\.dmp$\|\.dng$\|\.doc$\|\.docx$\|\.drv$\|\.dwg$\|\.dxf$\|\.ear$\|\.efx$\|\.eps$\|\.epub$\|\.exe$\|\.fla$\|\.flv$\|\.fnt$\|\.fon$\|\.gadget$\|\.gam$\|\.gbr$\|\.ged$\|\.gif$\|\.gpx$\|\.gz$\|\.hqx$\|\.ibooks$\|\.icns$\|\.ico$\|\.ics$\|\.iff$\|\.img$\|\.indd$\|\.iso$\|\.jar$\|\.jpeg$\|\.jpg$\|\.key$\|\.keychain$\|\.kml$\|\.lnk$\|\.lz$\|\.m3u$\|\.m4a$\|\.max$\|\.mdb$\|\.mid$\|\.mim$\|\.moov$\|\.mov$\|\.movie$\|\.mp2$\|\.mp3$\|\.mp4$\|\.mpa$\|\.mpeg$\|\.mpg$\|\.msg$\|\.msi$\|\.nes$\|\.o$\|\.obj$\|\.ocx$\|\.odt$\|\.otf$\|\.pages$\|\.part$\|\.pct$\|\.pdb$\|\.pdf$\|\.pif$\|\.pkg$\|\.plugin$\|\.png$\|\.pps$\|\.ppt$\|\.pptx$\|\.prf$\|\.ps$\|\.psd$\|\.pspimage$\|\.qt$\|\.ra$\|\.rar$\|\.rm$\|\.rom$\|\.rpm$\|\.rtf$\|\.sav$\|\.scr$\|\.sdf$\|\.sea$\|\.sit$\|\.sitx$\|\.sln$\|\.smi$\|\.so$\|\.svg$\|\.swf$\|\.swp$\|\.sys$\|\.tar$\|\.tar.gz$\|\.tax2010$\|\.tga$\|\.thm$\|\.tif$\|\.tiff$\|\.tlb$\|\.tmp$\|\.toast$\|\.torrent$\|\.ttc$\|\.ttf$\|\.uu$\|\.uue$\|\.vb$\|\.vcd$\|\.vcf$\|\.vcxproj$\|\.vob$\|\.war$\|\.wav$\|\.wma$\|\.wmv$\|\.wpd$\|\.wps$\|\.xll$\|\.xlr$\|\.xls$\|\.xlsx$\|\.xpi$\|\.yuv$\|\.Z$\|\.zip$\|\.zipx$\|\.lib$\|\.res$\|\.rc$\|\.out$\|\.cache$\|\.tgz$\|\.gho$\|\.ghs$'
-endif
-
-if exists('g:cscope_ignore_strict') && g:cscope_ignore_strict == 1
-  let g:cscope_ignore_files = g:cscope_ignore_files.'\|\.xml$\|\.yml$\|\.ini$\|\.conf$\|\.css$\|\.htc$\|\.bat$\|\.sh$\|\.txt$\|\.log$\|\.dtd$\|\.xsd$'
+if !exists('g:cscope_interested_files')
+  let files = readfile(expand("<sfile>:p:h")."/interested.txt")
+  let g:cscope_interested_files = join(map(files, 'v:val."$"'), '\|')
 endif
 
 let s:cscope_vim_dir = substitute($HOME,'\\','/','g')."/.cscope.vim"
@@ -58,9 +55,7 @@ function! s:ListFiles(dir)
         call add(d, fn)
       elseif getftype(fn) != 'file'
         continue
-      elseif stridx(fn, '.') == -1
-        continue
-      elseif fn =~ g:cscope_ignore_files
+      elseif fn !~? g:cscope_interested_files
         continue
       else
         if stridx(fn, ' ') != -1
@@ -109,7 +104,12 @@ function! s:_CreateDB(dir)
     call writefile(files, cscope_files)
   endif
   exec 'cs kill '.s:cscope_vim_dir.'/'.id.'.db'
+  redir @x
   exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f'.s:cscope_vim_dir.'/'.id.'.db'
+  redi END
+  if @x =~ "\nCommand terminated\n"
+      echohl WarningMsg | echo "Failed to create cscope database for ".a:dir.", please check if " | echohl None
+  endif
   let s:dbs[a:dir]['dirty'] = 0
 endfunction
 
@@ -297,7 +297,7 @@ function! CscopeFindInteractive(pat)
 endfunction
 
 function! s:onChange()
-  if expand('%:t') !~ g:cscope_ignore_files
+  if expand('%:t') !~ g:cscope_interested_files
     let m_dir = <SID>GetBestPath(expand('%:p:h'))
     if m_dir != ""
       let s:dbs[m_dir]['dirty'] = 1
