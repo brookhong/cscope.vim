@@ -142,6 +142,7 @@ function! s:InitDB(dir)
 endfunction
 
 function! s:LoadDB(dir)
+  cs kill -1
   exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'.db'
   let s:dbs[a:dir]['loadtimes'] = s:dbs[a:dir]['loadtimes']+1
   call <SID>FlushIndex()
@@ -297,7 +298,7 @@ function! CscopeFindInteractive(pat)
 endfunction
 
 function! s:onChange()
-  if expand('%:t') !~ g:cscope_interested_files
+  if expand('%:t') =~? g:cscope_interested_files
     let m_dir = <SID>GetBestPath(expand('%:p:h'))
     if m_dir != ""
       let s:dbs[m_dir]['dirty'] = 1
