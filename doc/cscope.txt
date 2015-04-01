@@ -128,6 +128,12 @@ Use this option to toggle messages for database updated.
 Use the option to specify the path to cscope excutalbe, if it is not in PATH.
   let g:cscope_cmd = '/home/brook/bin/cscope'
 
+                                                                *'g:cscope_split_threshold'*
+Specify a number. If total files found for a directory exceeds it, then a
+separated cscope database will be created for modified/added files to avoid
+long time for updating cscope database.
+  let g:cscope_split_threshold = 9999
+
                                                                 *'g:cscope_interested_files'*
 Specify the extentions you want to include when building cscope database, the
 default extentions are listed in interested.txt.

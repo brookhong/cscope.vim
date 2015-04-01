@@ -15,6 +15,10 @@ if !exists('g:cscope_open_location')
   let g:cscope_open_location = 1
 endif
 
+if !exists('g:cscope_split_threshold')
+  let g:cscope_split_threshold = 10000
+endif
+
 if !exists('g:cscope_cmd')
   if executable('cscope')
     let g:cscope_cmd = 'cscope'
@@ -90,27 +94,42 @@ function! s:CheckNewFile(dir, newfile)
   let id = s:dbs[a:dir]['id']
   let cscope_files = s:cscope_vim_dir."/".id.".files"
   let files = readfile(cscope_files)
+  if len(files) > g:cscope_split_threshold
+    let cscope_files = s:cscope_vim_dir."/".id."_inc.files"
+    if filereadable(cscope_files)
+      let files = readfile(cscope_files)
+    else
+      let files = []
+    endif
+  endif
   if count(files, a:newfile) == 0
     call add(files, a:newfile)
     call writefile(files, cscope_files)
   endif
 endfunction
 
-function! s:_CreateDB(dir)
+function! s:_CreateDB(dir, init)
   let id = s:dbs[a:dir]['id']
-  let cscope_files = s:cscope_vim_dir."/".id.".files"
-  if ! filereadable(cscope_files)
-    let files = <SID>ListFiles(a:dir)
-    call writefile(files, cscope_files)
+  let cscope_files = s:cscope_vim_dir."/".id."_inc.files"
+  let cscope_db = s:cscope_vim_dir.'/'.id.'_inc.db'
+  if ! filereadable(cscope_files) || a:init
+    let cscope_files = s:cscope_vim_dir."/".id.".files"
+    let cscope_db = s:cscope_vim_dir.'/'.id.'.db'
+    if ! filereadable(cscope_files)
+      let files = <SID>ListFiles(a:dir)
+      call writefile(files, cscope_files)
+    endif
   endif
-  exec 'cs kill '.s:cscope_vim_dir.'/'.id.'.db'
+  exec 'cs kill '.cscope_db
   redir @x
-  exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f'.s:cscope_vim_dir.'/'.id.'.db'
+  exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f'.cscope_db
   redi END
   if @x =~ "\nCommand terminated\n"
-      echohl WarningMsg | echo "Failed to create cscope database for ".a:dir.", please check if " | echohl None
+    echohl WarningMsg | echo "Failed to create cscope database for ".a:dir.", please check if " | echohl None
+  else
+    let s:dbs[a:dir]['dirty'] = 0
+    exec 'cs add '.cscope_db
   endif
-  let s:dbs[a:dir]['dirty'] = 0
 endfunction
 
 function! s:CheckAbsolutePath(dir, defaultPath)
@@ -137,13 +156,16 @@ function! s:InitDB(dir)
   let s:dbs[a:dir]['id'] = id
   let s:dbs[a:dir]['loadtimes'] = 0
   let s:dbs[a:dir]['dirty'] = 0
-  call <SID>_CreateDB(a:dir)
+  call <SID>_CreateDB(a:dir, 1)
   call <SID>FlushIndex()
 endfunction
 
 function! s:LoadDB(dir)
   cs kill -1
   exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'.db'
+  if filereadable(s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'_inc.db')
+    exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'_inc.db'
+  endif
   let s:dbs[a:dir]['loadtimes'] = s:dbs[a:dir]['loadtimes']+1
   call <SID>FlushIndex()
 endfunction
@@ -168,10 +190,9 @@ endfunction
 
 function! s:updateDBs(dirs)
   for d in a:dirs
-    call <SID>_CreateDB(d)
+    call <SID>_CreateDB(d, 0)
   endfor
   call <SID>FlushIndex()
-  cs reset
 endfunction
 
 function! s:echo(msg)
@@ -240,9 +261,7 @@ function! s:preloadDB()
   let dirs = split(g:cscope_preload_path, ';')
   for m_dir in dirs
     let m_dir = <SID>CheckAbsolutePath(m_dir, m_dir)
-    if has_key(s:dbs, m_dir)
-      call <SID>_CreateDB(m_dir)
-    else
+    if ! has_key(s:dbs, m_dir)
       call <SID>InitDB(m_dir)
     endif
     call <SID>LoadDB(m_dir)
