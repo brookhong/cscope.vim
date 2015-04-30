@@ -19,11 +19,26 @@ if !exists('g:cscope_split_threshold')
   let g:cscope_split_threshold = 10000
 endif
 
+function! ToggleLocationList()
+  let l:own = winnr()
+  lw
+  let l:cwn = winnr()
+  if(l:cwn == l:own)
+    if &buftype == 'quickfix'
+      lclose
+    elseif len(getloclist(winnr())) > 0
+      lclose
+    else
+      echohl WarningMsg | echo "No location list." | echohl None
+    endif
+  endif
+endfunction
+
 if !exists('g:cscope_cmd')
   if executable('cscope')
     let g:cscope_cmd = 'cscope'
   else
-    call <SID>echo('cscope: command not found')
+    echo 'cscope: command not found'
     finish
   endif
 endif
@@ -266,21 +281,6 @@ function! s:preloadDB()
     endif
     call <SID>LoadDB(m_dir)
   endfor
-endfunction
-
-function! ToggleLocationList()
-  let l:own = winnr()
-  lw
-  let l:cwn = winnr()
-  if(l:cwn == l:own)
-    if &buftype == 'quickfix'
-      lclose
-    elseif len(getloclist(winnr())) > 0
-      lclose
-    else
-      echohl WarningMsg | echo "No location list." | echohl None
-    endif
-  endif
 endfunction
 
 function! CscopeFind(action, word)
