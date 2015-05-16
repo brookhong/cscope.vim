@@ -19,6 +19,10 @@ if !exists('g:cscope_split_threshold')
   let g:cscope_split_threshold = 10000
 endif
 
+if !exists('g:cscope_search_case_insensitive')
+  let g:cscope_search_case_insensitive = 0
+endif
+
 function! ToggleLocationList()
   let l:own = winnr()
   lw
@@ -143,7 +147,11 @@ function! s:_CreateDB(dir, init)
     echohl WarningMsg | echo "Failed to create cscope database for ".a:dir.", please check if " | echohl None
   else
     let s:dbs[a:dir]['dirty'] = 0
-    exec 'cs add '.cscope_db
+    if g:cscope_search_case_insensitive == 1
+      exec 'cs add '.cscope_db.' '.a:dir.' -C'
+    else
+      exec 'cs add '.cscope_db
+    endif
   endif
 endfunction
 
@@ -177,10 +185,21 @@ endfunction
 
 function! s:LoadDB(dir)
   cs kill -1
-  exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'.db'
-  if filereadable(s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'_inc.db')
-    exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'_inc.db'
+
+  if g:cscope_search_case_insensitive == 1
+    exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'.db '.a:dir.' -C'
+
+    if filereadable(s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'_inc.db')
+      exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'_inc.db '.a:dir.' -C'
+    endif
+  else
+    exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'.db'
+
+    if filereadable(s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'_inc.db')
+      exe 'cs add '.s:cscope_vim_dir.'/'.s:dbs[a:dir]['id'].'_inc.db'
+    endif
   endif
+
   let s:dbs[a:dir]['loadtimes'] = s:dbs[a:dir]['loadtimes']+1
   call <SID>FlushIndex()
 endfunction
