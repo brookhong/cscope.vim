@@ -317,9 +317,9 @@ function! CscopeFind(action, word, ...)
   call <SID>AutoloadDB(expand('%:p:h'))
   try
     if a:0 == 0 
-      exe ':lcs f '.a:action.' '.a:word
+      exe ':cs f '.a:action.' '.a:word
       if g:cscope_open_location == 1
-        lw
+        cw
       endif
     elseif a:0 == 1 && a:1 == 'horizontal'
       exe ':scs f '.a:action.' '.a:word
