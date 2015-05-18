@@ -318,19 +318,14 @@ function! CscopeFind(action, word, ...)
   try
     if a:0 == 0 
       exe ':cs f '.a:action.' '.a:word
-      if g:cscope_open_location == 1
-        cw
-      endif
-    elseif a:1 == 'horizontal'
+    elseif a:0 == 1 && a:1 == 'horizontal'
       exe ':scs f '.a:action.' '.a:word
-      if g:cscope_open_location == 1
-        cw
-      endif
-    elseif a:1 == 'vertical'
+    elseif a:0 == 1 && a:1 == 'vertical'
       exe ':vert scs f '.a:action.' '.a:word
-      if g:cscope_open_location == 1
-        cw
-      endif
+    endif
+
+    if g:cscope_open_location == 1
+      cw
     endif
   catch
     echohl WarningMsg | echo 'Can not find '.a:word.' with querytype as '.a:action.'.' | echohl None
