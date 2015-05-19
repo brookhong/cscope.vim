@@ -341,7 +341,7 @@ function! CscopeFindInteractive(pat)
     elseif len(qt) > 0
         call CscopeFind(qt, a:pat)
     endif
-    call feedkeys("\<CR>")
+    " call feedkeys("\<CR>")
 endfunction
 
 function! s:onChange()
