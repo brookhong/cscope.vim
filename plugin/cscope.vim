@@ -318,9 +318,9 @@ function! CscopeFind(action, word, ...)
   try
     if a:0 == 0 
       exe ':cs f '.a:action.' '.a:word
-    elseif a:0 == 1 && a:1 == 'horizontal'
+    elseif a:0 >= 1 && a:1 == 'horizontal'
       exe ':scs f '.a:action.' '.a:word
-    elseif a:0 == 1 && a:1 == 'vertical'
+    elseif a:0 >= 1 && a:1 == 'vertical'
       exe ':vert scs f '.a:action.' '.a:word
     endif
 
