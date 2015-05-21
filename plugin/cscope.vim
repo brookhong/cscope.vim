@@ -2,27 +2,6 @@
 "    Copyright: Copyright (C) 2012-2015 Brook Hong
 "    License: The MIT License
 "
-
-if !exists('g:cscope_silent')
-  let g:cscope_silent = 0
-endif
-
-if !exists('g:cscope_auto_update')
-  let g:cscope_auto_update = 1
-endif
-
-if !exists('g:cscope_open_location')
-  let g:cscope_open_location = 1
-endif
-
-if !exists('g:cscope_split_threshold')
-  let g:cscope_split_threshold = 10000
-endif
-
-if !exists('g:cscope_search_case_insensitive')
-  let g:cscope_search_case_insensitive = 0
-endif
-
 function! ToggleLocationList()
   let l:own = winnr()
   lw
@@ -37,23 +16,6 @@ function! ToggleLocationList()
     endif
   endif
 endfunction
-
-if !exists('g:cscope_cmd')
-  if executable('cscope')
-    let g:cscope_cmd = 'cscope'
-  else
-    echo 'cscope: command not found'
-    finish
-  endif
-endif
-
-if !exists('g:cscope_interested_files')
-  let files = readfile(expand("<sfile>:p:h")."/interested.txt")
-  let g:cscope_interested_files = join(map(files, 'v:val."$"'), '\|')
-endif
-
-let s:cscope_vim_dir = substitute($HOME,'\\','/','g')."/.cscope.vim"
-let s:index_file = s:cscope_vim_dir.'/index'
 
 function! s:GetBestPath(dir)
   let f = substitute(a:dir,'\\','/','g')
@@ -134,14 +96,15 @@ function! s:_CreateDB(dir, init)
   if ! filereadable(cscope_files) || a:init
     let cscope_files = s:cscope_vim_dir."/".id.".files"
     let cscope_db = s:cscope_vim_dir.'/'.id.'.db'
-    if ! filereadable(cscope_files)
-      let files = <SID>ListFiles(a:dir)
-      call writefile(files, cscope_files)
-    endif
   endif
+
+  " force update file list
+  let files = <SID>ListFiles(a:dir)
+  call writefile(files, cscope_files)
+
   exec 'cs kill '.cscope_db
   redir @x
-  exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f'.cscope_db
+  exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f '.cscope_db
   redi END
   if @x =~ "\nCommand terminated\n"
     echohl WarningMsg | echo "Failed to create cscope database for ".a:dir.", please check if " | echohl None
@@ -357,9 +320,53 @@ function! s:onChange()
   endif
 endfunction
 
-function! CscopeUpdateDB()
+function! CscopeUpdateAllDB()
   call <SID>updateDBs(keys(s:dbs))
 endfunction
+
+function! CscopeUpdateCurrentDB()
+  let m_dir = <SID>GetBestPath(expand('%:p:h'))
+  for d in keys(s:dbs)
+    if d == m_dir
+      call <SID>updateDBs([d])
+    endif
+  endfor
+endfunction
+
+if !exists('g:cscope_silent')
+  let g:cscope_silent = 0
+endif
+
+if !exists('g:cscope_auto_update')
+  let g:cscope_auto_update = 1
+endif
+
+if !exists('g:cscope_open_location')
+  let g:cscope_open_location = 1
+endif
+
+if !exists('g:cscope_split_threshold')
+  let g:cscope_split_threshold = 10000
+endif
+
+if !exists('g:cscope_search_case_insensitive')
+  let g:cscope_search_case_insensitive = 0
+endif
+
+if !exists('g:cscope_cmd')
+  if executable('cscope')
+    let g:cscope_cmd = 'cscope'
+  else
+    echo 'cscope: command not found'
+    finish
+  endif
+endif
+
+if !exists('g:cscope_interested_files')
+  let files = readfile(expand("<sfile>:p:h")."/interested.txt")
+  let g:cscope_interested_files = join(map(files, 'v:val."$"'), '\|')
+endif
+
 if exists('g:cscope_preload_path')
   call <SID>preloadDB()
 endif
@@ -367,6 +374,9 @@ endif
 if g:cscope_auto_update == 1
   au BufWritePost * call <SID>onChange()
 endif
+
+let s:cscope_vim_dir = substitute($HOME,'\\','/','g')."/.cscope.vim"
+let s:index_file = s:cscope_vim_dir.'/index'
 
 set cscopequickfix=s-,g-,d-,c-,t-,e-,f-,i-
 com! -nargs=0 CscopeClear call <SID>clearDBs()
