@@ -104,7 +104,7 @@ function! s:_CreateDB(dir, init)
 
   exec 'cs kill '.cscope_db
   redir @x
-  exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f '.cscope_db
+  exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f'.cscope_db
   redi END
   if @x =~ "\nCommand terminated\n"
     echohl WarningMsg | echo "Failed to create cscope database for ".a:dir.", please check if " | echohl None
@@ -269,15 +269,19 @@ function! CscopeFind(action, word, ...)
   " the a:1 is used for window spliting control.
   " ===
   let dirtyDirs = []
+
   for d in keys(s:dbs)
     if s:dbs[d]['dirty'] == 1
       call add(dirtyDirs, d)
     endif
   endfor
+
   if len(dirtyDirs) > 0
     call <SID>updateDBs(dirtyDirs)
   endif
+
   call <SID>AutoloadDB(expand('%:p:h'))
+
   try
     if a:0 == 0 
       exe ':cs f '.a:action.' '.a:word
@@ -297,14 +301,16 @@ endfunction
 
 function! CscopeFindInteractive(pat)
     call inputsave()
+
     let qt = input("\nChoose a querytype for '".a:pat."'(:help cscope-find)\n  c: functions calling this function\n  d: functions called by this function\n  e: this egrep pattern\n  f: this file\n  g: this definition\n  i: files #including this file\n  s: this C symbol\n  t: this text string\n\n  or\n  <querytype><pattern> to query `pattern` instead of '".a:pat."' as `querytype`, Ex. `smain` to query a C symbol named 'main'.\n> ")
+
     call inputrestore()
+
     if len(qt) > 1
         call CscopeFind(qt[0], qt[1:])
     elseif len(qt) > 0
         call CscopeFind(qt, a:pat)
     endif
-    " call feedkeys("\<CR>")
 endfunction
 
 function! s:onChange()
@@ -328,7 +334,7 @@ function! CscopeUpdateCurrentDB()
   let m_dir = <SID>GetBestPath(expand('%:p:h'))
   for d in keys(s:dbs)
     if d == m_dir
-      call <SID>updateDBs([d])
+      call <SID>updateDBs([m_dir])
     endif
   endfor
 endfunction
