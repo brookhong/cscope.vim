@@ -92,11 +92,6 @@ function! CscopeUpdateAllDB()
 endfunction
 
 function! CscopeUpdateCurrentDB()
-  "==========================
-  " (0010)   check if current db already exists
-  " (0020)   if exists, update and stop
-  " (0030)   if not exists, build db and stop
-  "==========================
   let l:current_path = expand('%:p:h')
   let l:prepend_path = <SID>GetPrependPath(l:current_path)
 
@@ -208,7 +203,7 @@ function! s:FlushIndex()
 endfunction
 
 function! s:GetPrependPath(dir)
-  let f = substitute(a:dir,'\\','/','g')
+  let f = tolower(substitute(a:dir,'\\','/','g'))
   let bestDir = ""
 
   for d in keys(s:dbs)
@@ -222,19 +217,19 @@ endfunction
 
 function! s:InitDB(current_path)
   echohl WarningMsg | echo "Can not find a proper cscope db, please input a path to generate one." | echohl None
-  let l:prepend_path = input("", a:current_path, 'dir')
+  let l:prepend_path = tolower(substitute(input("", a:current_path, 'dir'),'\\','/','g'))
 
   if l:prepend_path != ''
     let prepend_path = <SID>CheckAbsolutePath(l:prepend_path, a:current_path)
 
     echohl WarningMsg | echo "\nPlease input depedency paths (separated with ';'), if any." | echohl None
-    let l:depedency_path = input("", "", 'dir')
+    let l:depedency_path = tolower(substitute(input("", "", 'dir'),'\\','/','g'))
 
     let s:dbs[l:prepend_path] = {}
     let s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_id] = localtime()
     let s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_loadtimes] = 0
     let s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_dirty] = 0
-    let s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_depedency] = tolower(substitute(l:depedency_path,'\\','/','g'))
+    let s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_depedency] = l:depedency_path
 
     call <SID>FlushIndex()
 
