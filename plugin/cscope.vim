@@ -4,6 +4,7 @@
 "
 let s:cscope_vim_db_dir = substitute($HOME,'\\','/','g')."/.cscope.vim"
 let s:cscope_vim_db_index_file = s:cscope_vim_db_dir.'/index'
+let s:cscope_vim_db_current_prepend_path = ""
 let s:cscope_vim_db_entry_len = 5
 let s:cscope_vim_db_entry_idx_prepend_path = 0
 let s:cscope_vim_db_entry_idx_id = 1
@@ -15,44 +16,43 @@ let s:cscope_vim_db_entry_key_loadtimes = 'loadtimes'
 let s:cscope_vim_db_entry_key_dirty = 'dirty'
 let s:cscope_vim_db_entry_key_depedency = 'depedency'
 
-function! ToggleLocationList()
-  let l:own = winnr()
-  lw
-  let l:cwn = winnr()
-
-  if(l:cwn == l:own)
-    if &buftype == 'quickfix'
-      lclose
-    elseif len(getloclist(winnr())) > 0
-      lclose
-    else
-      echohl WarningMsg | echo "No location list." | echohl None
-    endif
-  endif
-endfunction
-
 function! CscopeFind(action, word, ...)
   " ============================================
   " the a:1 is used for window spliting control.
   " ============================================
-  let current_path = expand('%:p:h')
-  let prepend_path = <SID>GetPrependPath(current_path)
+  let l:current_path = tolower(substitute(expand('%:p:h'), '\\', '/', 'g'))
+  let l:prepend_path = <SID>GetPrependPath(l:current_path)
+  let l:in_dependency = 0
 
-  if prepend_path == ""
-    echohl WarningMsg | echo "Can not find a proper cscope db, please input a path to generate one." | echohl None
-    let prepend_path = input("", current_path, 'dir')
+  " possible reasons for empty prepend path
+  "   - DB not yet built
+  "   - we are in depedency files 
+  if l:prepend_path == "" && s:cscope_vim_db_current_prepend_path != ""
+    for l:d in split(s:dbs[s:cscope_vim_db_current_prepend_path][s:cscope_vim_db_entry_key_depedency], ';')
+      let l:d = substitute(l:d, "\/\\s*$", '', 'g')
 
-    if prepend_path != ''
-      let prepend_path = <SID>CheckAbsolutePath(prepend_path, current_path)
+      if stridx(l:current_path, l:d) == 0
+        let l:in_dependency = 1
+        break
+      endif
+    endfor
+  endif
+  
+  " build a brand new db
+  if l:prepend_path == "" && l:in_dependency == 0 
+    let l:prepend_path = <SID>InitDB(l:current_path)
 
-      call <SID>InitDB(prepend_path)
-      call <SID>ReloadDB(prepend_path)
+    if l:prepend_path != ""
+      call <SID>BuildDB(l:prepend_path, 1)
+      call <SID>LoadDB(l:prepend_path)
     endif
-  else
-    let id = s:dbs[prepend_path][s:cscope_vim_db_entry_key_id]
+  endif
 
-    if cscope_connection(2, s:cscope_vim_db_dir.'/'.id.'.db') == 0
-      call <SID>ReloadDB(prepend_path)
+  if l:prepend_path != ""
+    let l:id = s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_id]
+
+    if cscope_connection(2, s:cscope_vim_db_dir.'/'.l:id.'.db') == 0
+      call <SID>LoadDB(l:prepend_path)
     endif
   endif
 
@@ -97,20 +97,33 @@ function! CscopeUpdateCurrentDB()
   " (0020)   if exists, update and stop
   " (0030)   if not exists, build db and stop
   "==========================
-  let current_path = expand('%:p:h')
-  let prepend_path = <SID>GetPrependPath(current_path)
+  let l:current_path = expand('%:p:h')
+  let l:prepend_path = <SID>GetPrependPath(l:current_path)
 
-  if prepend_path != ""
-    call <SID>UpdateDBs([prepend_path])
+  if l:prepend_path != ""
+    call <SID>UpdateDBs([l:prepend_path])
   else
-    echohl WarningMsg | echo "Can not find a proper cscope db, please input a path to generate one." | echohl None
-    let prepend_path = input("", current_path, 'dir')
+    let l:prepend_path = <SID>InitDB(l:current_path)
 
-    if prepend_path != ''
-      let prepend_path = <SID>CheckAbsolutePath(prepend_path, current_path)
+    if l:prepend_path != ""
+      call <SID>BuildDB(l:prepend_path, 1)
+      call <SID>LoadDB(l:prepend_path)
+    endif
+  endif
+endfunction
 
-      call <SID>InitDB(prepend_path)
-      call <SID>ReloadDB(prepend_path)
+function! ToggleLocationList()
+  let l:own = winnr()
+  lw
+  let l:cwn = winnr()
+
+  if(l:cwn == l:own)
+    if &buftype == 'quickfix'
+      lclose
+    elseif len(getloclist(winnr())) > 0
+      lclose
+    else
+      echohl WarningMsg | echo "No location list." | echohl None
     endif
   endif
 endfunction
@@ -142,28 +155,28 @@ function! s:ClearDBs()
   let s:dbs = {}
 
   call <SID>RmDBfiles()
-  call writefile([], s:cscope_vim_db_index_file)
+  " call writefile([], s:cscope_vim_db_index_file)
 endfunction
 
-function! s:CreateDB(prepend_path, init)
-  let id = s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id]
-  let depedency = split(s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_depedency], ';')
-  let cscope_files = s:cscope_vim_db_dir."/".id."_inc.files"
-  let cscope_db = s:cscope_vim_db_dir.'/'.id.'_inc.db'
+function! s:BuildDB(prepend_path, init)
+  let l:id = s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id]
+  let l:depedency = split(s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_depedency], ';')
+  let l:cscope_files = s:cscope_vim_db_dir."/".id."_inc.files"
+  let l:cscope_db = s:cscope_vim_db_dir.'/'.id.'_inc.db'
 
   if ! filereadable(cscope_files) || a:init
-    let cscope_files = s:cscope_vim_db_dir."/".id.".files"
-    let cscope_db = s:cscope_vim_db_dir.'/'.id.'.db'
+    let l:cscope_files = s:cscope_vim_db_dir."/".id.".files"
+    let l:cscope_db = s:cscope_vim_db_dir.'/'.id.'.db'
   endif
 
   " validate depedency
-  for i in range(len(depedency))
-    let depedency[i] = <SID>CheckAbsolutePath(depedency[i], "")
+  for i in range(len(l:depedency))
+    let l:depedency[i] = <SID>CheckAbsolutePath(l:depedency[i], "")
   endfor
 
   " force update file list
   let files = []
-  for d in [a:prepend_path] + depedency
+  for d in [a:prepend_path] + l:depedency
     let files += <SID>ListFiles(d)
   endfor
   call writefile(files, cscope_files)
@@ -179,23 +192,19 @@ function! s:CreateDB(prepend_path, init)
     echohl WarningMsg | echo "Failed to create cscope database for ".a:prepend_path.", please check if " | echohl None
   else
     let s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_dirty] = 0
-
-    if g:cscope_search_case_insensitive == 1
-      exec 'cs add '.cscope_db.' '.a:prepend_path.' -C'
-    else
-      exec 'cs add '.cscope_db
-    endif
   endif
+
+  call <SID>FlushIndex()
 endfunction
 
 function! s:FlushIndex()
-  let lines = []
+  let l:lines = []
 
   for d in keys(s:dbs)
-    call add(lines, d.'|'.s:dbs[d][s:cscope_vim_db_entry_key_id].'|'.s:dbs[d][s:cscope_vim_db_entry_key_loadtimes].'|'.s:dbs[d][s:cscope_vim_db_entry_key_dirty].'|'.s:dbs[d][s:cscope_vim_db_entry_key_depedency].'|')
+    call add(l:lines, d.'|'.s:dbs[d][s:cscope_vim_db_entry_key_id].'|'.s:dbs[d][s:cscope_vim_db_entry_key_loadtimes].'|'.s:dbs[d][s:cscope_vim_db_entry_key_dirty].'|'.s:dbs[d][s:cscope_vim_db_entry_key_depedency].'|')
   endfor
 
-  call writefile(lines, s:cscope_vim_db_index_file)
+  call writefile(l:lines, s:cscope_vim_db_index_file)
 endfunction
 
 function! s:GetPrependPath(dir)
@@ -211,29 +220,28 @@ function! s:GetPrependPath(dir)
   return bestDir
 endfunction
 
-function! s:InitDB(prepend_path)
-  " ============================
-  " (000) Get depedency path
-  " (001) Create cscope db entry
-  " (002) Build cscope db
-  " (003) Update index file
-  " ============================
-  " (000) Get depedency path
-  echohl WarningMsg | echo "\nPlease input depedency paths (separated with ';'), if any." | echohl None
-  let depedency_path = input("", "", 'dir')
+function! s:InitDB(current_path)
+  echohl WarningMsg | echo "Can not find a proper cscope db, please input a path to generate one." | echohl None
+  let l:prepend_path = input("", a:current_path, 'dir')
 
-  " (001) Create cscope db entry
-  let s:dbs[a:prepend_path] = {}
-  let s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id] = localtime()
-  let s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_loadtimes] = 0
-  let s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_dirty] = 0
-  let s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_depedency] = depedency_path
+  if l:prepend_path != ''
+    let prepend_path = <SID>CheckAbsolutePath(l:prepend_path, a:current_path)
 
-  " (002) Build cscope db
-  call <SID>CreateDB(a:prepend_path, 1)
+    echohl WarningMsg | echo "\nPlease input depedency paths (separated with ';'), if any." | echohl None
+    let l:depedency_path = input("", "", 'dir')
 
-  " (003) Update index file
-  call <SID>FlushIndex()
+    let s:dbs[l:prepend_path] = {}
+    let s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_id] = localtime()
+    let s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_loadtimes] = 0
+    let s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_dirty] = 0
+    let s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_depedency] = tolower(substitute(l:depedency_path,'\\','/','g'))
+
+    call <SID>FlushIndex()
+
+    return l:prepend_path
+  else
+    echohl WarningMsg | echo "Error: path can not be empty." | echohl None
+  endif
 endfunction
 
 function! s:ListDBs()
@@ -252,8 +260,10 @@ function! s:ListDBs()
       else
         let l = printf(" %d  %10d            %s", id, s:dbs[d]['loadtimes'], d)
       endif
+
       call add(s, l)
     endfor
+
     echo join(s, "\n")
   endif
 endfunction
@@ -291,24 +301,30 @@ function! s:ListFiles(dir)
   return f
 endfunction
 
-function! s:ReloadDB(prepend_path)
+function! s:LoadDB(prepend_path)
   cs kill -1
 
   if g:cscope_search_case_insensitive == 1
     exe 'cs add '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'.db '.a:prepend_path.' -C'
+    echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'.db added.'
 
     if filereadable(s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db')
       exe 'cs add '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db '.a:prepend_path.' -C'
+      echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db added.'
     endif
   else
     exe 'cs add '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'.db'
+    echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'.db added.'
 
     if filereadable(s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db')
       exe 'cs add '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db'
+      echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db added.'
     endif
   endif
 
   let s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_loadtimes] = s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_loadtimes] + 1
+  let s:cscope_vim_db_current_prepend_path = a:prepend_path
+
   call <SID>FlushIndex()
 endfunction
 
@@ -316,7 +332,7 @@ function! s:LoadIndex()
   " s:dbs = { 'prepend1': {'id': '',
   "                        'loadtimes': '',
   "                        'dirty': 0|1,
-  "                        'depedency': ['', '']},
+  "                        'depedency': '...;...'},
   "           ...
   "         }
   let s:dbs = {}
@@ -332,19 +348,19 @@ function! s:LoadIndex()
       if len(e) != s:cscope_vim_db_entry_len
         call <SID>RmDBfiles()
       else
-        let db_file = s:cscope_vim_db_dir.'/'.e[s:cscope_vim_db_entry_idx_id].'.db'
-        let db_file_list = s:cscope_vim_db_dir.'/'.e[s:cscope_vim_db_entry_idx_id].'.files'
+        let l:db_file = s:cscope_vim_db_dir.'/'.e[s:cscope_vim_db_entry_idx_id].'.db'
+        let l:db_file_list = s:cscope_vim_db_dir.'/'.e[s:cscope_vim_db_entry_idx_id].'.files'
        
-        if filereadable(db_file)
+        if filereadable(l:db_file)
           if isdirectory(e[s:cscope_vim_db_entry_idx_prepend_path])
             let s:dbs[e[s:cscope_vim_db_entry_idx_prepend_path]] = {}
             let s:dbs[e[s:cscope_vim_db_entry_idx_prepend_path]][s:cscope_vim_db_entry_key_id] = e[s:cscope_vim_db_entry_idx_id]
             let s:dbs[e[s:cscope_vim_db_entry_idx_prepend_path]][s:cscope_vim_db_entry_key_loadtimes] = e[s:cscope_vim_db_entry_idx_loadtimes]
             let s:dbs[e[s:cscope_vim_db_entry_idx_prepend_path]][s:cscope_vim_db_entry_key_dirty] = e[s:cscope_vim_db_entry_idx_dirty]
-            let s:dbs[e[s:cscope_vim_db_entry_idx_prepend_path]][s:cscope_vim_db_entry_key_depedency] = split(e[s:cscope_vim_db_entry_idx_depedency], ';')
+            let s:dbs[e[s:cscope_vim_db_entry_idx_prepend_path]][s:cscope_vim_db_entry_key_depedency] = e[s:cscope_vim_db_entry_idx_depedency]
           else
-            call delete(db_file)
-            call delete(db_file_list)
+            call delete(l:db_file)
+            call delete(l:db_file_list)
           endif
         endif
       endif
@@ -367,10 +383,8 @@ function! s:UpdateDBs(prepend_paths)
   " (0010) re-create db(s),
   "======================
   for d in a:prepend_paths
-    call <SID>CreateDB(d, 0)
+    call <SID>BuildDB(d, 0)
   endfor
-
-  call <SID>FlushIndex()
 endfunction
 
 if !exists('g:cscope_open_location')
