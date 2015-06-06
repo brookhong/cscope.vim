@@ -144,13 +144,17 @@ function! s:CheckAbsolutePath(dir, defaultPath)
   return d
 endfunction
 
-function! s:ClearDBs()
+" @param clearWhich:  -1   all database
+"                      0   the current database
+function! s:ClearDBs(clearWhich)
   cs kill -1
   
-  let s:dbs = {}
+  if a:clearWhich == -1
+    let s:dbs = {}
+    call <SID>RmDBfiles()
+    call writefile([], s:cscope_vim_db_index_file)
+  endif
 
-  call <SID>RmDBfiles()
-  " call writefile([], s:cscope_vim_db_index_file)
 endfunction
 
 function! s:BuildDB(prepend_path, init)
@@ -405,7 +409,8 @@ if !exists('g:cscope_interested_files')
 endif
 
 set cscopequickfix=s-,g-,d-,c-,t-,e-,f-,i-
-com! -nargs=0 CscopeClear call <SID>ClearDBs()
+com! -nargs=0 CscopeClearAllDB call <SID>ClearDBs(-1)
+com! -nargs=0 CscopeClearCurrentDB call <SID>ClearDBs(0)
 com! -nargs=0 CscopeList call <SID>ListDBs()
 call <SID>LoadIndex()
 
