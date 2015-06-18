@@ -305,19 +305,19 @@ function! s:LoadDB(prepend_path)
 
   if g:cscope_search_case_insensitive == 1
     exe 'cs add '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'.db '.a:prepend_path.' -C'
-    echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'.db added.'
+    echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'.db added, searching case insensitively.'
 
     if filereadable(s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db')
       exe 'cs add '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db '.a:prepend_path.' -C'
-      echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db added.'
+      echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db added, searching case insensitively.'
     endif
   else
     exe 'cs add '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'.db'
-    echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'.db added.'
+    echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'.db added, searching case sensitively.'
 
     if filereadable(s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db')
       exe 'cs add '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db'
-      echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db added.'
+      echo 'cscope db '.s:cscope_vim_db_dir.'/'.s:dbs[a:prepend_path][s:cscope_vim_db_entry_key_id].'_inc.db added, searching case sensitively.'
     endif
   endif
 
