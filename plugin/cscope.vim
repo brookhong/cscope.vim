@@ -17,9 +17,6 @@ let s:cscope_vim_db_entry_key_dirty = 'dirty'
 let s:cscope_vim_db_entry_key_depedency = 'depedency'
 
 function! CscopeFind(action, word, ...)
-  " ============================================
-  " the a:1 is used for window spliting control.
-  " ============================================
   let l:current_path = tolower(substitute(expand('%:p:h'), '\\', '/', 'g'))
   let l:prepend_path = <SID>GetPrependPath(l:current_path)
   let l:in_dependency = 0
@@ -87,16 +84,18 @@ function! CscopeFindInteractive(pat)
     endif
 endfunction
 
-function! CscopeUpdateAllDB()
-  call <SID>UpdateDBs(keys(s:dbs))
+function! s:CscopeUpdateAllDB()
+  for d in keys(s:dbs)
+    call <SID>BuildDB(d, 0)
+  endfor
 endfunction
 
-function! CscopeUpdateCurrentDB()
+function! s:CscopeUpdateCurrentDB()
   let l:current_path = expand('%:p:h')
   let l:prepend_path = <SID>GetPrependPath(l:current_path)
 
   if l:prepend_path != ""
-    call <SID>UpdateDBs([l:prepend_path])
+    call <SID>BuildDB(l:prepend_path, 0)
   else
     let l:prepend_path = <SID>InitDB(l:current_path)
 
@@ -107,19 +106,15 @@ function! CscopeUpdateCurrentDB()
   endif
 endfunction
 
-function! ToggleLocationList()
-  let l:own = winnr()
-  lw
-  let l:cwn = winnr()
+function! s:CscopeRebuildCurrentDB()
+  call <SID>ClearDBs(0)
 
-  if(l:cwn == l:own)
-    if &buftype == 'quickfix'
-      lclose
-    elseif len(getloclist(winnr())) > 0
-      lclose
-    else
-      echohl WarningMsg | echo "No location list." | echohl None
-    endif
+  let l:current_path = expand('%:p:h')
+  let l:prepend_path = <SID>InitDB(l:current_path)
+
+  if l:prepend_path != ""
+    call <SID>BuildDB(l:prepend_path, 1)
+    call <SID>LoadDB(l:prepend_path)
   endif
 endfunction
 
@@ -153,8 +148,22 @@ function! s:ClearDBs(clearWhich)
     let s:dbs = {}
     call <SID>RmDBfiles()
     call writefile([], s:cscope_vim_db_index_file)
-  endif
+  elseif a:clearWhich == 0
+    let l:current_path = expand('%:p:h')
+    let l:prepend_path = <SID>GetPrependPath(l:current_path)
 
+    if l:prepend_path != ""
+      let l:current_db_files = split(globpath(s:cscope_vim_db_dir, s:dbs[l:prepend_path][s:cscope_vim_db_entry_key_id]."*"), "\n")
+
+      for f in l:current_db_files
+        call delete(f)
+      endfor
+
+      unlet s:dbs[l:prepend_path]
+
+      call <SID>FlushIndex()
+    endif
+  endif
 endfunction
 
 function! s:BuildDB(prepend_path, init)
@@ -220,7 +229,7 @@ function! s:GetPrependPath(dir)
 endfunction
 
 function! s:InitDB(current_path)
-  echohl WarningMsg | echo "Can not find a proper cscope db, please input a path to generate one." | echohl None
+  echohl WarningMsg | echo "Please input a path to generate cscope database." | echohl None
   let l:prepend_path = tolower(substitute(input("", a:current_path, 'dir'),'\\','/','g'))
 
   if l:prepend_path != ''
@@ -377,15 +386,6 @@ function! s:RmDBfiles()
   endfor
 endfunction
 
-function! s:UpdateDBs(prepend_paths)
-  "======================
-  " (0010) re-create db(s),
-  "======================
-  for d in a:prepend_paths
-    call <SID>BuildDB(d, 0)
-  endfor
-endfunction
-
 if !exists('g:cscope_open_location')
   let g:cscope_open_location = 1
 endif
@@ -408,9 +408,13 @@ if !exists('g:cscope_interested_files')
   let g:cscope_interested_files = join(map(files, 'v:val."$"'), '\|')
 endif
 
+command! -nargs=0 CscopeClearAllDB       call <SID>ClearDBs(-1)
+command! -nargs=0 CscopeClearCurrentDB   call <SID>ClearDBs(0)
+command! -nargs=0 CscopeList             call <SID>ListDBs()
+command! -nargs=0 CscopeRebuildCurrentDB call <SID>CscopeRebuildCurrentDB()
+command! -nargs=0 CscopeUpdateAllDB      call <SID>CscopeUpdateAllDB()
+command! -nargs=0 CscopeUpdateCurrentDB  call <SID>CscopeUpdateCurrentDB()
+
 set cscopequickfix=s-,g-,d-,c-,t-,e-,f-,i-
-com! -nargs=0 CscopeClearAllDB call <SID>ClearDBs(-1)
-com! -nargs=0 CscopeClearCurrentDB call <SID>ClearDBs(0)
-com! -nargs=0 CscopeList call <SID>ListDBs()
 call <SID>LoadIndex()
 
