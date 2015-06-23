@@ -1,4 +1,3 @@
-    " vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab foldmethod=marker
 "    Copyright: Copyright (C) 2012-2015 Brook Hong
 "    License: The MIT License
 "
@@ -71,17 +70,17 @@ function! CscopeFind(action, word, ...)
 endfunction
 
 function! CscopeFindInteractive(pat)
-    call inputsave()
+  call inputsave()
 
-    let qt = input("\nChoose a querytype for '".a:pat."'(:help cscope-find)\n  c: functions calling this function\n  d: functions called by this function\n  e: this egrep pattern\n  f: this file\n  g: this definition\n  i: files #including this file\n  s: this C symbol\n  t: this text string\n\n  or\n  <querytype><pattern> to query `pattern` instead of '".a:pat."' as `querytype`, Ex. `smain` to query a C symbol named 'main'.\n> ")
+  let qt = input("\nChoose a querytype for '".a:pat."'(:help cscope-find)\n  c: functions calling this function\n  d: functions called by this function\n  e: this egrep pattern\n  f: this file\n  g: this definition\n  i: files #including this file\n  s: this C symbol\n  t: this text string\n\n  or\n  <querytype><pattern> to query `pattern` instead of '".a:pat."' as `querytype`, Ex. `smain` to query a C symbol named 'main'.\n> ")
 
-    call inputrestore()
+  call inputrestore()
 
-    if len(qt) > 1
-      call CscopeFind(qt[0], qt[1:])
-    elseif len(qt) > 0
-      call CscopeFind(qt, a:pat)
-    endif
+  if len(qt) > 1
+    call CscopeFind(qt[0], qt[1:])
+  elseif len(qt) > 0
+    call CscopeFind(qt, a:pat)
+  endif
 endfunction
 
 function! s:CscopeUpdateAllDB()
