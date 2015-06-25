@@ -54,7 +54,7 @@ function! CscopeFind(action, word, ...)
 
   try
     if a:0 == 0 
-      exe ':lcs f '.a:action.' '.a:word
+      exe ':cs f '.a:action.' '.a:word
     elseif a:0 >= 1 && a:1 == 'horizontal'
       exe ':scs f '.a:action.' '.a:word
     elseif a:0 >= 1 && a:1 == 'vertical'
