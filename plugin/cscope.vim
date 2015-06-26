@@ -216,11 +216,20 @@ function! s:echo(msg)
   endif
 endfunction
 
-function! s:clearDBs()
+function! s:clearDBs(dir)
   cs kill -1
-  let s:dbs = {}
-  call <SID>RmDBfiles()
-  call writefile([], s:index_file)
+  if a:dir == ""
+    let s:dbs = {}
+    call <SID>RmDBfiles()
+  else
+    let id = s:dbs[a:dir]['id']
+    call delete(s:cscope_vim_dir."/".id.".files")
+    call delete(s:cscope_vim_dir.'/'.id.'.db')
+    call delete(s:cscope_vim_dir."/".id."_inc.files")
+    call delete(s:cscope_vim_dir.'/'.id.'_inc.db')
+    unlet s:dbs[a:dir]
+  endif
+  call <SID>FlushIndex()
 endfunction
 
 function! s:listDBs()
@@ -341,6 +350,11 @@ if g:cscope_auto_update == 1
 endif
 
 set cscopequickfix=s-,g-,d-,c-,t-,e-,f-,i-
-com! -nargs=0 CscopeClear call <SID>clearDBs()
+
+function! s:listDirs(A,L,P)
+  return keys(s:dbs)
+endfunction
+com! -nargs=? -complete=customlist,<SID>listDirs CscopeClear call <SID>clearDBs("<args>")
+
 com! -nargs=0 CscopeList call <SID>listDBs()
 call <SID>loadIndex()

@@ -103,7 +103,11 @@ Here is example output from |:CscopeList|
     PATH        which folder the db is for.
                                                                *CscopeClear*
 
-Remove all existing cscope databases that cscove has created for you.
+Remove the database for specified folder or all existing cscope databases that
+cscove has created for you if no folder provided.
+You can use <Tab> for completion.
+
+    :CscopeClear <full_path>
 
     :CscopeClear
 
