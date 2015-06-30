@@ -54,11 +54,11 @@ function! CscopeFind(action, word, ...)
 
   try
     if a:0 == 0 
-      exe ':cs f '.a:action.' '.a:word
+      exe 'cs f '.a:action.' '.a:word
     elseif a:0 >= 1 && a:1 == 'horizontal'
-      exe ':scs f '.a:action.' '.a:word
+      exe 'scs f '.a:action.' '.a:word
     elseif a:0 >= 1 && a:1 == 'vertical'
-      exe ':vert scs f '.a:action.' '.a:word
+      exe 'vert scs f '.a:action.' '.a:word
     endif
 
     if g:cscope_open_location == 1
@@ -188,10 +188,14 @@ function! s:BuildDB(prepend_path, init)
   endfor
   call writefile(files, cscope_files)
 
-  " build cscope database
+  " build cscope database, must build in the 
+  " prepend path otherwise there might be error
+  " in generating database, e.g. invalid path for
+  " symbols.
+  exec 'chdir '.a:prepend_path
   exec 'cs kill '.cscope_db
   redir @x
-  exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f'.cscope_db
+  exec 'silent !'.g:cscope_cmd.' -b -i '.cscope_files.' -f '.cscope_db
   redir END
 
   " check build result and add database
