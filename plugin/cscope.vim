@@ -19,6 +19,12 @@ if !exists('g:cscope_split_threshold')
   let g:cscope_split_threshold = 10000
 endif
 
+function! s:echo(msg)
+  if g:cscope_silent == 0
+    echo a:msg
+  endif
+endfunction
+
 function! ToggleLocationList()
   let l:own = winnr()
   lw
@@ -38,7 +44,7 @@ if !exists('g:cscope_cmd')
   if executable('cscope')
     let g:cscope_cmd = 'cscope'
   else
-    echo 'cscope: command not found'
+    call <SID>echo('cscope: command not found')
     finish
   endif
 endif
@@ -208,12 +214,6 @@ function! s:updateDBs(dirs)
     call <SID>_CreateDB(d, 0)
   endfor
   call <SID>FlushIndex()
-endfunction
-
-function! s:echo(msg)
-  if g:cscope_silent == 0
-    echo a:msg
-  endif
 endfunction
 
 function! s:clearDBs(dir)
