@@ -73,25 +73,32 @@ function! s:ListFiles(dir)
   let f = []
   let cwd = a:dir
   let sl = &l:stl
-  while cwd != ''
-    let a = split(globpath(cwd, "*"), "\n")
-    for fn in a
-      if getftype(fn) == 'dir'
-        call add(d, fn)
-      elseif getftype(fn) != 'file'
-        continue
-      elseif fn !~? g:cscope_interested_files
-        continue
-      else
-        if stridx(fn, ' ') != -1
-          let fn = '"'.fn.'"'
+  try
+    while cwd != ''
+      let a = split(globpath(cwd, "*"), "\n")
+      for fn in a
+        if getftype(fn) == 'dir'
+          if !exists('g:cscope_ignored_dir') || fn !~? g:cscope_ignored_dir
+            call add(d, fn)
+          endif
+        elseif getftype(fn) != 'file'
+          continue
+        elseif fn !~? g:cscope_interested_files
+          continue
+        else
+          if stridx(fn, ' ') != -1
+            let fn = '"'.fn.'"'
+          endif
+          call add(f, fn)
         endif
-        call add(f, fn)
-      endif
-    endfor
-    let cwd = len(d) ? remove(d, 0) : ''
-    sleep 1m | let &l:stl = 'Found '.len(f).' files, finding in '.cwd | redrawstatus
-  endwhile
+      endfor
+      let cwd = len(d) ? remove(d, 0) : ''
+      sleep 1m | let &l:stl = 'Found '.len(f).' files, finding in '.cwd | redrawstatus
+    endwhile
+  catch /^Vim:Interrupt$/
+  catch
+    echo "caught" v:exception
+  endtry
   sleep 1m | let &l:stl = sl | redrawstatus
   return f
 endfunction
@@ -191,7 +198,10 @@ function! s:LoadDB(dir)
   call <SID>FlushIndex()
 endfunction
 
+" 0 -- loaded
+" 1 -- cancelled
 function! s:AutoloadDB(dir)
+  let ret = 0
   let m_dir = <SID>GetBestPath(a:dir)
   if m_dir == ""
     echohl WarningMsg | echo "Can not find proper cscope db, please input a path to generate cscope db for." | echohl None
@@ -200,6 +210,8 @@ function! s:AutoloadDB(dir)
       let m_dir = <SID>CheckAbsolutePath(m_dir, a:dir)
       call <SID>InitDB(m_dir)
       call <SID>LoadDB(m_dir)
+    else
+      let ret = 1
     endif
   else
     let id = s:dbs[m_dir]['id']
@@ -207,6 +219,7 @@ function! s:AutoloadDB(dir)
       call <SID>LoadDB(m_dir)
     endif
   endif
+  return ret
 endfunction
 
 function! s:updateDBs(dirs)
@@ -302,15 +315,17 @@ function! CscopeFind(action, word)
   if len(dirtyDirs) > 0
     call <SID>updateDBs(dirtyDirs)
   endif
-  call <SID>AutoloadDB(expand('%:p:h'))
-  try
-    exe ':lcs f '.a:action.' '.a:word
-    if g:cscope_open_location == 1
-      lw
-    endif
-  catch
-    echohl WarningMsg | echo 'Can not find '.a:word.' with querytype as '.a:action.'.' | echohl None
-  endtry
+  let dbl = <SID>AutoloadDB(expand('%:p:h'))
+  if dbl == 0
+    try
+      exe ':lcs f '.a:action.' '.a:word
+      if g:cscope_open_location == 1
+        lw
+      endif
+    catch
+      echohl WarningMsg | echo 'Can not find '.a:word.' with querytype as '.a:action.'.' | echohl None
+    endtry
+  endif
 endfunction
 
 function! CscopeFindInteractive(pat)

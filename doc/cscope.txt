@@ -143,6 +143,11 @@ Specify the extentions you want to include when building cscope database, the
 default extentions are listed in interested.txt.
   let g:cscope_interested_files = '\.c$\|\.cpp$\|\.h$\|\.hpp'
 
+                                                                *'g:cscope_ignored_dir'*
+Specify the sub directories you want to exclude when building cscope database, for
+example:
+  let g:cscope_ignored_dir = 'node_modules$\|dist$'
+
                                                                 *'g:cscope_preload_path'*
 Preload path settings help you to load some common libraries by default. For example,
     let g:cscope_preload_path="/usr/include/c++/;/works/phplib/trunk/php"
