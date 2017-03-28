@@ -39,5 +39,15 @@ cscope#find({querytype}, {pattern})                            *cscope#find()*
   search your {pattern} with {querytype} in the database suitable for current
   file.
 
+cscope#findInteractive({pattern})                   *cscope#findInteractive()*
+  provide an interactive interface for finding what you want.
+
+cscope#updateDB()                                          *cscope#updateDB()*
+  update all existing cscope databases in case that you disable cscope
+  database auto update.
+
+cscope#toggleLocationList()                      *cscope#toggleLocationList()*
+  toggle the location list for found results.
+
 
 vim:tw=78:ts=8:ft=help:norl:

@@ -36,5 +36,23 @@ function! cscope#find(querytype, pattern) abort
   
 endfunction
 
+""
+" provide an interactive interface for finding what you want.
+function! cscope#findInteractive(pattern) abort
+  
+endfunction
+
+""
+" update all existing cscope databases in case that you disable cscope database
+" auto update.
+function! cscope#updateDB() abort
+  
+endfunction
+
+""
+" toggle the location list for found results.
+function! cscope#toggleLocationList() abort
+  
+endfunction
 
 " vim:set et sw=2 cc=80:
