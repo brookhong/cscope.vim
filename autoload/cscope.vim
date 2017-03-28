@@ -2,7 +2,7 @@
 " @section Introduction, intro
 " @stylized cscope
 " @library
-" @order intro version dicts functions exceptions layers api faq
+" @order intro key-mappings dicts functions exceptions layers api faq
 " Cscove(new name for this plugin, since cscope.vim is used too widely.) is a
 " smart cscope helper for vim.
 "
@@ -54,5 +54,42 @@ endfunction
 function! cscope#toggleLocationList() abort
   
 endfunction
+
+""
+" @section FAQ, faq
+" This is a section of all the faq about this plugin.
+
+""
+" @section KEY MAPPINGS, key-mappings
+" The default key mappings has been removed from the plugin itself, since
+" users may prefer different choices.
+"
+" So to use the plugin, you must define your own key mappings first.
+"
+" Below is the minimum key mappings.
+" >
+"   nnoremap <leader>fa :call CscopeFindInteractive(expand('<cword>'))<CR>
+"   nnoremap <leader>l :call ToggleLocationList()<CR>
+" <
+"
+" Some optional key mappings to search directly.
+" >
+"   s: Find this C symbol
+"   nnoremap  <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
+"   " g: Find this definition
+"   nnoremap  <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
+"   " d: Find functions called by this function
+"   nnoremap  <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
+"   " c: Find functions calling this function
+"   nnoremap  <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
+"   " t: Find this text string
+"   nnoremap  <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
+"   " e: Find this egrep pattern
+"   nnoremap  <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
+"   " f: Find this file
+"   nnoremap  <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
+"   " i: Find files #including this file
+"   nnoremap  <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
+" <
 
 " vim:set et sw=2 cc=80:

@@ -4,7 +4,9 @@ Brook Hong                                                   *cscope* *cscope*
 ==============================================================================
 CONTENTS                                                     *cscope-contents*
   1. Introduction...............................................|cscope-intro|
-  2. Functions..............................................|cscope-functions|
+  2. KEY MAPPINGS........................................|cscope-key-mappings|
+  3. Functions..............................................|cscope-functions|
+  4. FAQ..........................................................|cscope-faq|
 
 ==============================================================================
 INTRODUCTION                                                    *cscope-intro*
@@ -33,6 +35,40 @@ Cscove frees you from creating/connecting/updating cscope database, let you
 focus on code browsing.
 
 ==============================================================================
+KEY MAPPINGS                                             *cscope-key-mappings*
+
+The default key mappings has been removed from the plugin itself, since users
+may prefer different choices.
+
+So to use the plugin, you must define your own key mappings first.
+
+Below is the minimum key mappings.
+>
+  nnoremap <leader>fa :call CscopeFindInteractive(expand('<cword>'))<CR>
+  nnoremap <leader>l :call ToggleLocationList()<CR>
+<
+
+Some optional key mappings to search directly.
+>
+  s: Find this C symbol
+  nnoremap  <leader>fs :call CscopeFind('s', expand('<cword>'))<CR>
+  " g: Find this definition
+  nnoremap  <leader>fg :call CscopeFind('g', expand('<cword>'))<CR>
+  " d: Find functions called by this function
+  nnoremap  <leader>fd :call CscopeFind('d', expand('<cword>'))<CR>
+  " c: Find functions calling this function
+  nnoremap  <leader>fc :call CscopeFind('c', expand('<cword>'))<CR>
+  " t: Find this text string
+  nnoremap  <leader>ft :call CscopeFind('t', expand('<cword>'))<CR>
+  " e: Find this egrep pattern
+  nnoremap  <leader>fe :call CscopeFind('e', expand('<cword>'))<CR>
+  " f: Find this file
+  nnoremap  <leader>ff :call CscopeFind('f', expand('<cword>'))<CR>
+  " i: Find files #including this file
+  nnoremap  <leader>fi :call CscopeFind('i', expand('<cword>'))<CR>
+<
+
+==============================================================================
 FUNCTIONS                                                   *cscope-functions*
 
 cscope#find({querytype}, {pattern})                            *cscope#find()*
@@ -48,6 +84,11 @@ cscope#updateDB()                                          *cscope#updateDB()*
 
 cscope#toggleLocationList()                      *cscope#toggleLocationList()*
   toggle the location list for found results.
+
+==============================================================================
+FAQ                                                               *cscope-faq*
+
+This is a section of all the faq about this plugin.
 
 
 vim:tw=78:ts=8:ft=help:norl:
