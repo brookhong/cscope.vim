@@ -1,7 +1,10 @@
-" vim: tabstop=2 shiftwidth=2 softtabstop=2 expandtab foldmethod=marker
-"    Copyright: Copyright (C) 2012-2015 Brook Hong
-"    License: The MIT License
-"
+"=============================================================================
+" cscope.vim --- A smart cscope helper for vim
+" Copyright: Copyright (C) 2012-2015 Brook Hong
+" Author: Brook Hong < wsdjeg at 163.com >
+" URL: https://github.com/brookhong/cscope.vim
+" License: MIT license
+"=============================================================================
 
 if !exists('g:cscope_silent')
   let g:cscope_silent = 0
