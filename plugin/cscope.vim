@@ -318,7 +318,7 @@ function! CscopeFind(action, word)
   let dbl = <SID>AutoloadDB(expand('%:p:h'))
   if dbl == 0
     try
-      exe ':lcs f '.a:action.' '.a:word
+      exe ':cs f '.a:action.' '.a:word
       if g:cscope_open_location == 1
         lw
       endif
