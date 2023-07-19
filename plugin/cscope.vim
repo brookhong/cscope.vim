@@ -54,6 +54,11 @@ if !exists('g:cscope_interested_files')
   let g:cscope_interested_files = join(map(files, 'v:val."$"'), '\|')
 endif
 
+if !exists('g:cscope_uninterested_files')
+  let g:cscope_uninterested_files = ".*test\.cc"
+endif
+
+
 let s:cscope_vim_dir = substitute($HOME,'\\','/','g')."/.cscope.vim"
 let s:index_file = s:cscope_vim_dir.'/index'
 
@@ -83,7 +88,7 @@ function! s:ListFiles(dir)
           endif
         elseif getftype(fn) != 'file'
           continue
-        elseif fn !~? g:cscope_interested_files
+        elseif fn !~? g:cscope_interested_files || fn =~? g:cscope_uninterested_files
           continue
         else
           if stridx(fn, ' ') != -1
